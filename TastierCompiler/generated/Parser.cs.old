@@ -924,6 +924,11 @@ int getFrameAddress(Scope currentScope)
 			program.Add(new Instruction("", "Mul")); 
 			}
 			program.Add(new Instruction("", "Add"));
+			for(int i = 0; i < sym.Item6.Length; i++)
+			{
+			Console.Write(sym.Item6[i] + " ");
+			}	
+			Console.Write("\n\n");
 			
 			Expect(6);
 		}

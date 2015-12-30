@@ -106,7 +106,7 @@ program Test {
 
 	void testConst()
 	{
-		//expected output: 3
+		//expected output:101 
 		int a;
 		a := const0 + const1;
 		write a;
@@ -126,6 +126,7 @@ program Test {
 	}
 	void testArrays()
 	{
+		//expected output: 0..11 (3*2*2)
 		int i;
 		int j;
 		int k;
@@ -139,33 +140,43 @@ program Test {
 		secondDim := 3;
 
 		array int testArray[3][2][2];
-		for(i := 0; i := i + 1; i < zerothDim)
+		for(k := 0; k := k + 1; k < secondDim)
 		do
 		{
 			for(j := 0; j := j + 1; j < firstDim)
 			do
 			{
-				for(k := 0; k := k + 1; k < secondDim)
+				for(i := 0; i := i + 1; i < zerothDim)
 				do
 				{
-					testArray[k][j][i] := k * secondDim * firstDim + j * firstDim + i;
+					testArray[k][j][i] := k * firstDim * zerothDim + j * firstDim + i;
 				}
 			}
 		}
-		for(i := 0; i := i + 1; i < zerothDim)
+
+		for(k := 0; k := k + 1; k < secondDim)
 		do
 		{
 			for(j := 0; j := j + 1; j < firstDim)
 			do
 			{
-				for(k := 0; k := k + 1; k < secondDim)
+				for(i := 0; i := i + 1; i < zerothDim)
 				do
 				{
-					write testArray[k][j][i];
+					 write testArray[k][j][i];
 				}
 			}
 		}
 	}
+
+	void testConditionals()
+	{
+		int a;
+		int b;
+		b := 43;
+		a := b = 42 ? 99 : 999;
+		write a;
+	}	
 
   void Main() {
 	  testAssignment();
@@ -173,6 +184,7 @@ program Test {
 	  testConst();
 	  testForLoop();
 	  testArrays();
+	  testConditionals();
   }
 }
 

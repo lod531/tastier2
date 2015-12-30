@@ -513,7 +513,7 @@ int getFrameAddress(Scope currentScope)
 				{
 				SemErr("Attempted to index into non-existent array dimension");
 				}
-				for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes - 1; i++)
+				for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes; i++)
 				{
 				program.Add(new Instruction("", "Const " + sym.Item6[i]));
 				program.Add(new Instruction("", "Mul")); 
@@ -918,12 +918,17 @@ int getFrameAddress(Scope currentScope)
 			{
 			SemErr("Attempted to index into non-existent array dimension");
 			}
-			for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes - 1; i++)
+			for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes; i++)
 			{
 			program.Add(new Instruction("", "Const " + sym.Item6[i]));
 			program.Add(new Instruction("", "Mul")); 
 			}
 			program.Add(new Instruction("", "Add"));
+			for(int i = 0; i < sym.Item6.Length; i++)
+			{
+			Console.Write(sym.Item6[i] + " ");
+			}	
+			Console.Write("\n\n");
 			
 			Expect(6);
 		}

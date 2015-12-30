@@ -376,7 +376,7 @@ Factor<out TastierType type>    (.  int n; Symbol sym; string name; int numberOf
 						{
 							SemErr("Attempted to index into non-existent array dimension");
 						}
-						for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes - 1; i++)
+						for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes; i++)
 						{
 							program.Add(new Instruction("", "Const " + sym.Item6[i]));
 							program.Add(new Instruction("", "Mul")); 
@@ -541,15 +541,15 @@ Stat                            (.  TastierType type; string name; Symbol sym; b
 	  (VariableAssignment<sym> ';'
 	  
 	  | '(' ')' ';'                 (.
-										if ((TastierKind)sym.Item2 != TastierKind.Proc) {
-										  SemErr("object is not a procedure");
-										}
+						if ((TastierKind)sym.Item2 != TastierKind.Proc) {
+						  SemErr("object is not a procedure");
+						}
 
-										int currentStackLevel = openScopes.Count;
-										int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4);
-										string procedureLabel = getLabelForProcedureName(lexicalLevelDifference, sym.Item1);
-										program.Add(new Instruction("", "Call " + lexicalLevelDifference + " " + procedureLabel));
-									.)
+						int currentStackLevel = openScopes.Count;
+						int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4);
+						string procedureLabel = getLabelForProcedureName(lexicalLevelDifference, sym.Item1);
+						program.Add(new Instruction("", "Call " + lexicalLevelDifference + " " + procedureLabel));
+					.)
 	  )
 	)
 
@@ -710,23 +710,28 @@ VariableAssignment<Symbol sym>		(.  TastierType type; bool isExternal = false; i
     				
 	{
 			'[' Expr<out type>	(.	
-									Console.Write("STAT -> ARRAY INDEXING REACHED\n\n");
-									if(type != TastierType.Integer)
-									{
-										SemErr("non-integer index into array");
-									}
-									numberOfArrayIndexes++;
-									if(numberOfArrayIndexes > sym.Item6.Length)
-									{
-										SemErr("Attempted to index into non-existent array dimension");
-									}
-									for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes - 1; i++)
-									{
-										program.Add(new Instruction("", "Const " + sym.Item6[i]));
-										program.Add(new Instruction("", "Mul")); 
-									}
-									program.Add(new Instruction("", "Add"));
-								.)
+							Console.Write("STAT -> ARRAY INDEXING REACHED\n\n");
+							if(type != TastierType.Integer)
+							{
+								SemErr("non-integer index into array");
+							}
+							numberOfArrayIndexes++;
+							if(numberOfArrayIndexes > sym.Item6.Length)
+							{
+								SemErr("Attempted to index into non-existent array dimension");
+							}
+							for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes; i++)
+							{
+								program.Add(new Instruction("", "Const " + sym.Item6[i]));
+								program.Add(new Instruction("", "Mul")); 
+							}
+							program.Add(new Instruction("", "Add"));
+							for(int i = 0; i < sym.Item6.Length; i++)
+							{
+								Console.Write(sym.Item6[i] + " ");
+							}	
+							Console.Write("\n\n");
+						.)
 						
 		']'
 	}
@@ -740,37 +745,37 @@ VariableAssignment<Symbol sym>		(.  TastierType type; bool isExternal = false; i
     Expr<out type> 
                                 
     
-    [ '?' 		        (.
-	    					Console.Write("STAT -> CONDITIONAL ASSIGNMENT REACHED");
-							if ((TastierType)type != TastierType.Boolean) {
-							  SemErr("boolean type expected");
-							}
-							openLabels.Push(generateLabel());
-							program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
-						.)
-  Expr<out type>        (.
-							if (type != (TastierType)sym.Item3) {
-							  SemErr("incompatible types");
-							}
+	    [ '?' 		        (.
+						Console.Write("STAT -> CONDITIONAL ASSIGNMENT REACHED");
+						if ((TastierType)type != TastierType.Boolean) {
+						  SemErr("boolean type expected");
+						}
+						openLabels.Push(generateLabel());
+						program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
+					.)
+		Expr<out type>        	(.
+						if (type != (TastierType)sym.Item3) {
+						  SemErr("incompatible types");
+						}
 
-							Instruction startOfElse = new Instruction(openLabels.Pop(), "Nop");
-							/*
-							   If we got into the "if", we need to
-							   jump over the "else" so that it
-							   doesn't get executed.
-							*/
-							openLabels.Push(generateLabel());
-							program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
-							program.Add(startOfElse);
-						.)
+						Instruction startOfElse = new Instruction(openLabels.Pop(), "Nop");
+						/*
+						   If we got into the "if", we need to
+						   jump over the "else" so that it
+						   doesn't get executed.
+						*/
+						openLabels.Push(generateLabel());
+						program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
+						program.Add(startOfElse);
+					.)
 
-   ":" Expr<out type>	(. 
-							if (type != (TastierType)sym.Item3) {
-							  SemErr("incompatible types");
-							}
-							program.Add(new Instruction(openLabels.Pop(), "Nop"));
-						.)
-     ]	
+		":" Expr<out type>	(. 
+						if (type != (TastierType)sym.Item3) {
+						  SemErr("incompatible types");
+						}
+						program.Add(new Instruction(openLabels.Pop(), "Nop"));
+					.)
+	     ]	
 	
 		          		(.
 							type = (TastierType)sym.Item3;
@@ -979,15 +984,15 @@ ArrayDecl<bool external>        (.
 = "array" Type<out type>
   Ident<out name>           
   '[' number 	                (.
-                                    n = Convert.ToInt32(t.val);
-									dimensions.Insert(0, n);
+                                    	n = Convert.ToInt32(t.val);
+					dimensions.Insert(0, n);
                                 .)
   ']'
 
   {  '[' number 		(.
-                                    n = Convert.ToInt32(t.val);
-									dimensions.Insert(0, n);
-						.) 
+                                    	n = Convert.ToInt32(t.val);
+					dimensions.Insert(0, n);
+				.) 
 	']'
   }
   

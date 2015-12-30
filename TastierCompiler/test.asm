@@ -1,4 +1,4 @@
-.names 10
+.names 11
 .proc Const
 .Var const0
 .Var const1
@@ -8,6 +8,7 @@
 .proc testConst
 .proc testForLoop
 .proc testArrays
+.proc testConditionals
 .proc Main
 Const: Enter 3
 Const 99
@@ -266,21 +267,21 @@ StoI 0
 Const 5
 Const 3
 StoI 0
-Const 0
+Const 2
 Const 0
 StoI 0
 Jmp L$23
 L$24: Nop
-Const 0
-Const 0
+Const 2
+Const 2
 LoadI 0
 Const 1
 Add
 StoI 0
 L$23: Nop
-Const 0
+Const 2
 LoadI 0
-Const 3
+Const 5
 LoadI 0
 Lss
 FJmp L$25
@@ -302,21 +303,21 @@ Const 4
 LoadI 0
 Lss
 FJmp L$28
-Const 2
+Const 0
 Const 0
 StoI 0
 Jmp L$29
 L$30: Nop
-Const 2
-Const 2
+Const 0
+Const 0
 LoadI 0
 Const 1
 Add
 StoI 0
 L$29: Nop
-Const 2
+Const 0
 LoadI 0
-Const 5
+Const 3
 LoadI 0
 Lss
 FJmp L$31
@@ -325,19 +326,23 @@ Const 2
 LoadI 0
 Const 2
 Mul
+Const 2
+Mul
 Add
 Const 1
 LoadI 0
+Const 2
+Mul
 Add
 Const 0
 LoadI 0
 Add
 Const 2
 LoadI 0
-Const 5
+Const 4
 LoadI 0
 Mul
-Const 4
+Const 3
 LoadI 0
 Mul
 Const 1
@@ -356,21 +361,21 @@ Jmp L$27
 L$28: Nop
 Jmp L$24
 L$25: Nop
-Const 0
+Const 2
 Const 0
 StoI 0
 Jmp L$32
 L$33: Nop
-Const 0
-Const 0
+Const 2
+Const 2
 LoadI 0
 Const 1
 Add
 StoI 0
 L$32: Nop
-Const 0
+Const 2
 LoadI 0
-Const 3
+Const 5
 LoadI 0
 Lss
 FJmp L$34
@@ -392,21 +397,21 @@ Const 4
 LoadI 0
 Lss
 FJmp L$37
-Const 2
+Const 0
 Const 0
 StoI 0
 Jmp L$38
 L$39: Nop
-Const 2
-Const 2
+Const 0
+Const 0
 LoadI 0
 Const 1
 Add
 StoI 0
 L$38: Nop
-Const 2
+Const 0
 LoadI 0
-Const 5
+Const 3
 LoadI 0
 Lss
 FJmp L$40
@@ -415,9 +420,13 @@ Const 2
 LoadI 0
 Const 2
 Mul
+Const 2
+Mul
 Add
 Const 1
 LoadI 0
+Const 2
+Mul
 Add
 Const 0
 LoadI 0
@@ -432,11 +441,33 @@ Jmp L$33
 L$34: Nop
 Leave
 Ret
+testConditionals: Enter 2
+Const 1
+Const 43
+StoI 0
+Const 0
+Const 1
+LoadI 0
+Const 42
+Equ
+FJmp L$41
+Const 99
+Jmp L$42
+L$41: Nop
+Const 999
+L$42: Nop
+StoI 0
+Const 0
+LoadI 0
+Write
+Leave
+Ret
 Main: Enter 0
 Call 1 testAssignment
 Call 1 testBooleanOps
 Call 1 testConst
 Call 1 testForLoop
 Call 1 testArrays
+Call 1 testConditionals
 Leave
 Ret
