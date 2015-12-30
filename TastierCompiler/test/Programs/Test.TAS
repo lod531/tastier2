@@ -1,0 +1,178 @@
+// This is a test program which can be compiled by the TastierCompiler.
+// It reads a sequence of numbers from the input file and computes, for each
+// number, the sum of all integers up to that number
+
+program Test {
+	Const
+	{
+		int const0 := 99;
+		int const1 := 2;
+	}
+
+  int globalTest;
+
+	void testAssignment()
+	{
+		int a;
+		int b;
+		a := 32;
+		b := 64;
+		write a;
+		write b;
+		globalTest := 128;
+		write globalTest;
+	}
+
+	void testBooleanOps()
+	{
+		//expected output: 0 2 3 5 6 7 9
+		int a;
+		int b;
+
+		a := 0;
+		b := 0;
+		if(a = b)
+		{
+			//should write
+			write 0;
+		}
+		
+		b := 1;
+		if(a = b)
+		{
+			//should not write
+			write 1;
+		}
+		
+		a := 0;
+		b := 1;
+		if(a <= b)
+		{
+			//should write
+			write 2;
+		}
+		a := 1;
+		b := 1;
+		if(a <= b)
+		{
+			//should write
+			write 3;
+		}
+		a := 2;
+		b := 1;
+		if(a <= b)
+		{
+			//should not write
+			write 4;
+		}
+
+		a := 0;
+		b := -1;
+		if(a >= b)
+		{
+			//should write
+			write 5;
+		}
+		a := 0;
+		b := 0;
+		if(a >= b)
+		{
+			//should write
+			write 6;
+		}
+		a := 1;
+		b := 0;
+		if(a >= b)
+		{
+			//should write
+			write 7;
+		}
+
+		a := 0;
+		b := 0;
+		if(a != b)
+		{
+			//should not write
+			write 8;
+		}
+		a := 0;
+		b := 1;
+		if(a != b)
+		{
+			//should write
+			write 9;
+		}
+	}
+
+	void testConst()
+	{
+		//expected output: 3
+		int a;
+		a := const0 + const1;
+		write a;
+		//pretty impoverished test, I know.
+	}
+
+	void testForLoop()
+	{
+		//expected output : 0..9
+		int a;
+		a := 0;
+		for(; a := a + 1; a < 10)
+		do
+		{
+			write a;
+		}
+	}
+	void testArrays()
+	{
+		int i;
+		int j;
+		int k;
+
+		int zerothDim;
+		int firstDim;
+		int secondDim;
+
+		zerothDim := 2;
+		firstDim := 2;
+		secondDim := 3;
+
+		array int testArray[3][2][2];
+		for(i := 0; i := i + 1; i < zerothDim)
+		do
+		{
+			for(j := 0; j := j + 1; j < firstDim)
+			do
+			{
+				for(k := 0; k := k + 1; k < secondDim)
+				do
+				{
+					testArray[k][j][i] := k * secondDim * firstDim + j * firstDim + i;
+				}
+			}
+		}
+		for(i := 0; i := i + 1; i < zerothDim)
+		do
+		{
+			for(j := 0; j := j + 1; j < firstDim)
+			do
+			{
+				for(k := 0; k := k + 1; k < secondDim)
+				do
+				{
+					write testArray[k][j][i];
+				}
+			}
+		}
+	}
+
+  void Main() {
+	  testAssignment();
+	  testBooleanOps();
+	  testConst();
+	  testForLoop();
+	  testArrays();
+  }
+}
+
