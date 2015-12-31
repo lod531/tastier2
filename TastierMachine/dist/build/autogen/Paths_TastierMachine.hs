@@ -17,10 +17,10 @@ version :: Version
 version = Version {versionBranch = [0,1,0,0], versionTags = []}
 bindir, libdir, datadir, libexecdir :: FilePath
 
-bindir     = "/users/ugrad/buinovsa/.cabal/bin"
-libdir     = "/users/ugrad/buinovsa/.cabal/lib/TastierMachine-0.1.0.0/ghc-7.6.3"
-datadir    = "/users/ugrad/buinovsa/.cabal/share/TastierMachine-0.1.0.0"
-libexecdir = "/users/ugrad/buinovsa/.cabal/libexec"
+bindir     = "/home/abom/.cabal/bin"
+libdir     = "/home/abom/.cabal/lib/TastierMachine-0.1.0.0/ghc-7.6.3"
+datadir    = "/home/abom/.cabal/share/TastierMachine-0.1.0.0"
+libexecdir = "/home/abom/.cabal/libexec"
 
 getBinDir, getLibDir, getDataDir, getLibexecDir :: IO FilePath
 getBinDir = catchIO (getEnv "TastierMachine_bindir") (\_ -> return bindir)

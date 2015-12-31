@@ -1,4 +1,4 @@
-.names 11
+.names 12
 .proc Const
 .Var const0
 .Var const1
@@ -9,6 +9,7 @@
 .proc testForLoop
 .proc testArrays
 .proc testConditionals
+.proc testSwitch
 .proc Main
 Const: Enter 3
 Const 99
@@ -451,15 +452,67 @@ LoadI 0
 Const 42
 Equ
 FJmp L$41
-Const 99
+Const 45
 Jmp L$42
 L$41: Nop
-Const 999
+Const 50
 L$42: Nop
 StoI 0
 Const 0
 LoadI 0
 Write
+Leave
+Ret
+testSwitch: Enter 1
+Const 0
+Const 0
+StoI 0
+Jmp L$43
+L$44: Nop
+Const 0
+Const 0
+LoadI 0
+Const 1
+Add
+StoI 0
+L$43: Nop
+Const 0
+LoadI 0
+Const 4
+Lss
+FJmp L$45
+Const 0
+LoadI 0
+Dup
+Const 0
+Equ
+FJmp L$47
+Const 0
+Write
+Jmp L$46
+L$47: Nop
+Dup
+Const 1
+Equ
+FJmp L$48
+Const 1
+Write
+Jmp L$46
+L$48: Nop
+Dup
+Const 2
+Equ
+FJmp L$49
+Const 2
+Write
+Jmp L$46
+L$49: Nop
+Const 9999
+Write
+L$46: Nop
+Pop
+Jmp L$44
+L$45: Nop
 Leave
 Ret
 Main: Enter 0
@@ -469,5 +522,6 @@ Call 1 testConst
 Call 1 testForLoop
 Call 1 testArrays
 Call 1 testConditionals
+Call 1 testSwitch
 Leave
 Ret

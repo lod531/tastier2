@@ -8,7 +8,8 @@ COMPILER Tastier
   enum TastierType : int {   // types for variables
     Undefined,
     Integer,
-    Boolean
+    Boolean,
+    Character
   };
 
   enum TastierKind : int {  // kinds of symbol
@@ -265,12 +266,17 @@ void printSymbol(Symbol sym)
 		case ((int)TastierKind.Const):
 			kindString = "constant";
 			break;
+		case ((int)TastierKind.Array):
+			kindString = "array";
+			break;
 		default:
 			kindString = "oh man I have no idea";
 			break;
 	}
 	Console.Write(kindString + " ");
-	if((int)sym.Item2 == (int)TastierKind.Var || (int)sym.Item2 == (int)TastierKind.Const)
+	if((int)sym.Item2 == (int)TastierKind.Var 
+		|| (int)sym.Item2 == (int)TastierKind.Const
+		|| (int)sym.Item2 == (int)TastierKind.Array)
 	{
 		Console.Write("which is a ");
 		if(sym.Item4 == 0)
@@ -282,6 +288,15 @@ void printSymbol(Symbol sym)
 			Console.Write("local ");
 		}
 		Console.Write(kindString + " with address " + sym.Item5 + " ");
+	} 
+	if((int)sym.Item2 == (int)TastierKind.Array)
+	{
+		Console.Write("with dimensions ");
+		for(int i = sym.Item6.Length - 1; i >= 0; i--)
+		{
+			Console.Write("[" + sym.Item6[i] + "]");
+		}
+		Console.Write(" ");
 	}
 	Console.Write("which is named " + sym.Item1 + ".\n\n");
 }
@@ -306,15 +321,17 @@ int getFrameAddress(Scope currentScope)
 /*--------------------------------------------------------------------------*/
 
 CHARACTERS
-letter = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".
+  letter = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".
   digit = "0123456789".
   cr  = '\r'.
   lf  = '\n'.
   tab = '\t'.
+  space = ' '.
 
 TOKENS
   ident  = letter {letter | digit}.
   number = digit {digit}.
+  letter = '\'' (letter | digit | space) '\''.
 
 COMMENTS FROM "/*" TO "*/" NESTED
 COMMENTS FROM "//" TO lf
@@ -340,6 +357,10 @@ Expr<out TastierType type>      (.  TastierType type1; Instruction inst; .)
                                     if (type != type1) {
                                       SemErr("incompatible types");
                                     }
+				    if(type == TastierType.Character)
+				    {
+				    	SemErr("don't try to do boolean ops with characters <_<");
+			            }
                                     else {
                                       program.Add(inst);
                                       type = TastierType.Boolean;
@@ -349,7 +370,7 @@ Expr<out TastierType type>      (.  TastierType type1; Instruction inst; .)
 
 /*------------------------------------------------------------------------*/
 
-Factor<out TastierType type>    (.  int n; Symbol sym; string name; int numberOfArrayIndexes = 0; .)
+Factor<out TastierType type>    (.  int n; Symbol sym; string name; int numberOfArrayIndexes = 0; char letter; .)
 =                               (.  type = TastierType.Undefined; .)
   ( (Ident<out name>             (.	bool isExternal = false; //CS3071 students can ignore external declarations, since they only deal with compilation of single files.
 
@@ -414,6 +435,13 @@ Factor<out TastierType type>    (.  int n; Symbol sym; string name; int numberOf
                                     program.Add(new Instruction("", "Const " + n));
                                     type = TastierType.Integer;
                                 .)
+
+ | letter			(.
+  					name = t.val;
+					letter = name.ToCharArray()[1];
+					program.Add(new Instruction("", "Const " + letter));
+					type = TastierType.Character;
+				.)
   | '-'
     Factor<out type>            (.
                                     if (type != TastierType.Integer) {
@@ -517,6 +545,10 @@ SimExpr<out TastierType type>   (.  TastierType type1; Instruction inst; .)
                                     if (type != TastierType.Integer || type1 != TastierType.Integer) {
                                       SemErr("integer type expected");
                                     }
+				    if(type == TastierType.Character)
+				    {
+				    	SemErr("character arithmetic not support I'm afraid");
+				    }
                                     program.Add(inst);
                                 .)
   }.
@@ -526,17 +558,17 @@ SimExpr<out TastierType type>   (.  TastierType type1; Instruction inst; .)
 Stat                            (.  string name; Symbol sym; bool external = false; bool isExternal = false;.)
 
 = 
-	(Ident<out name>             (.	
-                                    	sym = lookup(openScopes, name);
-                                    	if (sym == null) {
-                                      	sym = _lookup(externalDeclarations, name);
-                                      		isExternal = true;
-                                    	}
+	(Ident<out name>             	(.	
+						sym = lookup(openScopes, name);
+						if (sym == null) {
+						sym = _lookup(externalDeclarations, name);
+							isExternal = true;
+						}
 
-                                    	if (sym == null) {
-                                      		SemErr("reference to undefined variable " + name);
-                                    	}
-								.)
+						if (sym == null) {
+							SemErr("reference to undefined variable " + name);
+						}
+					.)
     				
 	  (VariableAssignment<sym, isExternal> ';'
 	  
@@ -554,6 +586,8 @@ Stat                            (.  string name; Symbol sym; bool external = fal
 	)
 
 | IfStat 
+
+| SwitchStat
 
 | WhileStat 
 
@@ -708,7 +742,6 @@ IfStat                            (.  TastierType type; .)
 
 /*------------------------------------------------------------------------*/
 
-
 WhileStat                        (.  TastierType type; .)
 
 = 
@@ -726,7 +759,6 @@ WhileStat                        (.  TastierType type; .)
                                     program.Add(new Instruction(openLabels.Pop(), "Nop")); // put the loop end label here
                                 .)
   ).
-
 
 /*------------------------------------------------------------------------*/
 
@@ -843,6 +875,89 @@ WriteStat                       (.  TastierType type; .)
 
 /*------------------------------------------------------------------------*/
 
+SwitchStat			(. TastierType type; .)
+
+=
+	"switch(" Expr<out type>(.
+					if (type != TastierType.Integer)
+					{
+						SemErr("integer type expected!");
+					}
+					string endOfSwitchStatement = generateLabel();	//the label pushed on here
+											//signifies the end of the
+											//switch statement
+				.)
+	')' 
+	
+	'{'
+
+	{
+		"case"		(.
+					 program.Add(new Instruction("", "Dup"));
+				.)
+
+		
+		Expr<out type>	(.
+					if(type != TastierType.Integer)
+					{
+						SemErr("integer type expected!");
+					}
+					program.Add(new Instruction("", "Equ"));
+					openLabels.Push(generateLabel());
+					program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
+				.)
+
+		':' Stat	(.	
+					program.Add(new Instruction("", "Jmp " + endOfSwitchStatement));
+				.)
+
+		"break;"	(.
+					program.Add(new Instruction(openLabels.Pop(), "Nop"));
+				.)	
+	}
+	"default:" Stat		(.
+					//no if/else structure necessary here, as the matching fell through all the way
+					//to the default
+					program.Add(new Instruction(endOfSwitchStatement, "Nop"));
+					program.Add(new Instruction("", "Pop"));
+				.)
+	'}'.
+
+/*------------------------------------------------------------------------*/
+
+/*
+IfStat                            (.  TastierType type; .)
+
+= 
+  "if"
+  '(' Expr<out type> ')'        (.
+                                    if ((TastierType)type != TastierType.Boolean) {
+                                      SemErr("boolean type expected");
+                                    }
+                                    openLabels.Push(generateLabel());
+                                    program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
+                                .)
+      Stat                      (.
+                                    Instruction startOfElse = new Instruction(openLabels.Pop(), "Nop");
+                                    /*
+                                       If we got into the "if", we need to
+                                       jump over the "else" so that it
+                                       doesn't get executed.
+                                    */
+                                    openLabels.Push(generateLabel());
+                                    program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
+                                    program.Add(startOfElse);
+                                .)
+      [ "else"
+        Stat
+      ]                         (.  program.Add(new Instruction(openLabels.Pop(), "Nop")); .)
+
+   .
+*/
+
+
+/*------------------------------------------------------------------------*/
+
 Tastier                         (.  string name; bool external = false; .)
 = "program"
   Ident<out name>               (.
@@ -891,6 +1006,10 @@ Term<out TastierType type>      (.  TastierType type1; Instruction inst; .)
                                         type1 != TastierType.Integer) {
                                       SemErr("integer type expected");
                                     }
+				    else if(type == TastierType.Character)
+				    {
+				    	SemErr("character arithmetic not supported I'm afradi");
+				    }
                                     program.Add(inst);
                                 .)
   }.

@@ -33,6 +33,7 @@ data Instruction = Add
                  | Halt
                  | Dup
                  | Nop
+		 | Pop
                  deriving (Eq, Ord, Show, Enum)
 
 data InstructionWord = Nullary Instruction

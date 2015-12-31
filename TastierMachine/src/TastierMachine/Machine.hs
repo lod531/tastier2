@@ -94,6 +94,11 @@ run = do
                           smem = (smem // [(rtp, smem ! (rtp-1))]) }
           run
 
+        Instructions.Pop -> do
+          put $ machine { rpc = rpc + 1, rtp = rtp - 1 }
+          run
+
+
         Instructions.Nop -> do
           put $ machine { rpc = rpc + 1 }
           run
