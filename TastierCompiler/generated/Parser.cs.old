@@ -513,7 +513,7 @@ int getFrameAddress(Scope currentScope)
 				{
 				SemErr("Attempted to index into non-existent array dimension");
 				}
-				for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes - 1; i++)
+				for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes; i++)
 				{
 				program.Add(new Instruction("", "Const " + sym.Item6[i]));
 				program.Add(new Instruction("", "Mul")); 
@@ -691,8 +691,8 @@ int getFrameAddress(Scope currentScope)
 					SemErr("reference to undefined variable " + name);
 			}
 			
-			if (la.kind == 5 || la.kind == 30) {
-				VariableAssignment(sym);
+			if (la.kind == 5 || la.kind == 23) {
+				VariableAssignment(sym, isExternal);
 				Expect(22);
 			} else if (la.kind == 12) {
 				Get();
@@ -710,152 +710,24 @@ int getFrameAddress(Scope currentScope)
 			} else SynErr(46);
 			break;
 		}
-		case 23: {
-			Get();
-			Expect(12);
-			Expr(out type);
-			Expect(13);
-			if ((TastierType)type != TastierType.Boolean) {
-			 SemErr("boolean type expected");
-			}
-			openLabels.Push(generateLabel());
-			program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
-			
-			Stat();
-			Instruction startOfElse = new Instruction(openLabels.Pop(), "Nop");
-			/*
-			  If we got into the "if", we need to
-			  jump over the "else" so that it
-			  doesn't get executed.
-			*/
-			openLabels.Push(generateLabel());
-			program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
-			program.Add(startOfElse);
-			
-			if (la.kind == 24) {
-				Get();
-				Stat();
-			}
-			program.Add(new Instruction(openLabels.Pop(), "Nop")); 
-			break;
-		}
-		case 25: {
-			Get();
-			string loopStartLabel = generateLabel();
-			openLabels.Push(generateLabel()); //second label is for the loop end
-			program.Add(new Instruction(loopStartLabel, "Nop"));
-			
-			Expect(12);
-			Expr(out type);
-			Expect(13);
-			if ((TastierType)type != TastierType.Boolean) {
-			 SemErr("boolean type expected");
-			}
-			program.Add(new Instruction("", "FJmp " + openLabels.Peek())); // jump to the loop end label if condition is false
-			
-			Stat();
-			program.Add(new Instruction("", "Jmp " + loopStartLabel));
-			program.Add(new Instruction(openLabels.Pop(), "Nop")); // put the loop end label here
-			
-			break;
-		}
 		case 26: {
-			Get();
-			if (la.kind == 1) {
-				Ident(out name);
-				sym = lookup(openScopes, name);
-				if (sym == null) {
-				 sym = _lookup(externalDeclarations, name);
-				 isExternal = true;
-				}
-				if (sym == null) {
-				 SemErr("reference to undefined variable " + name);
-				}
-				
-				VariableAssignment(sym);
-			}
-			Expect(22);
-			string afterUpdateActionLabel = generateLabel();
-			program.Add(new Instruction("", "Jmp " + afterUpdateActionLabel));
-			//this skips the update action the first time the loop is ran
-			string loopStartLabel = generateLabel();
-			openLabels.Push(generateLabel()); //label for end of for loop
-			program.Add(new Instruction(loopStartLabel, "Nop"));
-			
-			Ident(out name);
-			sym = lookup(openScopes, name);
-			if (sym == null) {
-			 sym = _lookup(externalDeclarations, name);
-			 isExternal = true;
-			}
-			if (sym == null) {
-			 SemErr("reference to undefined variable " + name);
-			}
-			
-			VariableAssignment(sym);
-			program.Add(new Instruction(afterUpdateActionLabel, "Nop"));
-			
-			Expect(22);
-			Expr(out type);
-			if ((TastierType)type != TastierType.Boolean) {
-			 SemErr("boolean type expected");
-			}
-			program.Add(new Instruction("", "FJmp " + openLabels.Peek())); // jump to the loop end label if condition is false
-			
-			Expect(13);
-			Expect(27);
-			Stat();
-			program.Add(new Instruction("", "Jmp " + loopStartLabel));
-			 program.Add(new Instruction(openLabels.Pop(), "Nop")); // put the loop end label here
-			
+			IfStat();
 			break;
 		}
 		case 28: {
-			Get();
-			Ident(out name);
-			Expect(22);
-			sym = lookup(openScopes, name);
-			if (sym == null) {
-			 sym = _lookup(externalDeclarations, name);
-			 isExternal = true;
-			}
-			if (sym == null) {
-			 SemErr("reference to undefined variable " + name);
-			}
-			
-			if (sym.Item2 != (int)TastierKind.Var && sym.Item2 != (int)TastierKind.Const) {
-			 SemErr("variable or constant type expected but " + sym.Item1 + " has kind " + (TastierType)sym.Item2);
-			}
-			
-			if (sym.Item3 != (int)TastierType.Integer) {
-			 SemErr("integer type expected but " + sym.Item1 + " has type " + (TastierType)sym.Item2);
-			}
-			program.Add(new Instruction("", "Read"));
-			
-			if (sym.Item4 == 0) {
-			 if (isExternal) {
-			   program.Add(new Instruction("", "StoG " + sym.Item1));
-			   // if the symbol is external, we also store it by name. The linker will resolve the name to an address.
-			 } else {
-			   program.Add(new Instruction("", "StoG " + (sym.Item5+3)));
-			 }
-			}
-			else {
-			 int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
-			 program.Add(new Instruction("", "Sto " + lexicalLevelDifference + " " + sym.Item5));
-			}
-			
+			WhileStat();
 			break;
 		}
 		case 29: {
-			Get();
-			Expr(out type);
-			Expect(22);
-			if (type != TastierType.Integer) {
-			 SemErr("integer type expected");
-			}
-			program.Add(new Instruction("", "Write"));
-			
+			ForStat();
+			break;
+		}
+		case 31: {
+			ReadStat();
+			break;
+		}
+		case 32: {
+			WriteStat();
 			break;
 		}
 		case 40: {
@@ -893,8 +765,8 @@ int getFrameAddress(Scope currentScope)
 		}
 	}
 
-	void VariableAssignment(Symbol sym) {
-		TastierType type; bool isExternal = false; int numberOfArrayIndexes = 0;
+	void VariableAssignment(Symbol sym, bool isExternal) {
+		TastierType type; int numberOfArrayIndexes = 0;
 		program.Add(new Instruction("", "Const " + (sym.Item5)));
 		Console.Write("STAT -> ADDED CONST ONTO STACK\n\n");
 		if(sym.Item4 == 0 && !isExternal)
@@ -918,7 +790,7 @@ int getFrameAddress(Scope currentScope)
 			{
 			SemErr("Attempted to index into non-existent array dimension");
 			}
-			for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes - 1; i++)
+			for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes; i++)
 			{
 			program.Add(new Instruction("", "Const " + sym.Item6[i]));
 			program.Add(new Instruction("", "Mul")); 
@@ -932,17 +804,17 @@ int getFrameAddress(Scope currentScope)
 			
 			Expect(6);
 		}
-		Expect(30);
+		Expect(23);
 		if ((TastierKind)sym.Item2 != TastierKind.Var && (TastierKind)sym.Item2 != TastierKind.Array) {
 		 SemErr("cannot assign to non-variable");
 		}
 		
 		Expr(out type);
-		if (la.kind == 31) {
+		if (la.kind == 24) {
 			Get();
 			Console.Write("STAT -> CONDITIONAL ASSIGNMENT REACHED");
 			if ((TastierType)type != TastierType.Boolean) {
-			SemErr("boolean type expected");
+			 SemErr("boolean type expected");
 			}
 			openLabels.Push(generateLabel());
 			program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
@@ -962,7 +834,7 @@ int getFrameAddress(Scope currentScope)
 			program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
 			program.Add(startOfElse);
 			
-			Expect(32);
+			Expect(25);
 			Expr(out type);
 			if (type != (TastierType)sym.Item3) {
 			 SemErr("incompatible types");
@@ -987,6 +859,159 @@ int getFrameAddress(Scope currentScope)
 			program.Add(new Instruction("", "StoI " + lexicalLevelDifference));
 		}
 		} else SemErr("variable, constant or array identifier expected");
+		
+	}
+
+	void IfStat() {
+		TastierType type; 
+		Expect(26);
+		Expect(12);
+		Expr(out type);
+		Expect(13);
+		if ((TastierType)type != TastierType.Boolean) {
+		 SemErr("boolean type expected");
+		}
+		openLabels.Push(generateLabel());
+		program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
+		
+		Stat();
+		Instruction startOfElse = new Instruction(openLabels.Pop(), "Nop");
+		/*
+		  If we got into the "if", we need to
+		  jump over the "else" so that it
+		  doesn't get executed.
+		*/
+		openLabels.Push(generateLabel());
+		program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
+		program.Add(startOfElse);
+		
+		if (la.kind == 27) {
+			Get();
+			Stat();
+		}
+		program.Add(new Instruction(openLabels.Pop(), "Nop")); 
+	}
+
+	void WhileStat() {
+		TastierType type; 
+		Expect(28);
+		string loopStartLabel = generateLabel();
+		openLabels.Push(generateLabel()); //second label is for the loop end
+		program.Add(new Instruction(loopStartLabel, "Nop"));
+		
+		Expect(12);
+		Expr(out type);
+		Expect(13);
+		if ((TastierType)type != TastierType.Boolean) {
+		 SemErr("boolean type expected");
+		}
+		program.Add(new Instruction("", "FJmp " + openLabels.Peek())); // jump to the loop end label if condition is false
+		
+		Stat();
+		program.Add(new Instruction("", "Jmp " + loopStartLabel));
+		program.Add(new Instruction(openLabels.Pop(), "Nop")); // put the loop end label here
+		
+	}
+
+	void ForStat() {
+		TastierType type; string name; Symbol sym; bool isExternal = false;
+		Expect(29);
+		if (la.kind == 1) {
+			Ident(out name);
+			sym = lookup(openScopes, name);
+			if (sym == null) {
+			 sym = _lookup(externalDeclarations, name);
+			 isExternal = true;
+			}
+			if (sym == null) {
+			 SemErr("reference to undefined variable " + name);
+			}
+			
+			VariableAssignment(sym, isExternal);
+		}
+		Expect(22);
+		string afterUpdateActionLabel = generateLabel();
+		program.Add(new Instruction("", "Jmp " + afterUpdateActionLabel));
+		//this skips the update action the first time the loop is ran
+		string loopStartLabel = generateLabel();
+		openLabels.Push(generateLabel()); //label for end of for loop
+		program.Add(new Instruction(loopStartLabel, "Nop"));
+		
+		Ident(out name);
+		sym = lookup(openScopes, name);
+		if (sym == null) {
+		 sym = _lookup(externalDeclarations, name);
+		 isExternal = true;
+		}
+		if (sym == null) {
+		 SemErr("reference to undefined variable " + name);
+		}
+		
+		VariableAssignment(sym, isExternal);
+		program.Add(new Instruction(afterUpdateActionLabel, "Nop"));
+		
+		Expect(22);
+		Expr(out type);
+		if ((TastierType)type != TastierType.Boolean) {
+		 SemErr("boolean type expected");
+		}
+		program.Add(new Instruction("", "FJmp " + openLabels.Peek())); // jump to the loop end label if condition is false
+		
+		Expect(13);
+		Expect(30);
+		Stat();
+		program.Add(new Instruction("", "Jmp " + loopStartLabel));
+		program.Add(new Instruction(openLabels.Pop(), "Nop")); // put the loop end label here
+		
+	}
+
+	void ReadStat() {
+		string name; Symbol sym; bool isExternal = false;
+		Expect(31);
+		Ident(out name);
+		Expect(22);
+		sym = lookup(openScopes, name);
+		if (sym == null) {
+		 sym = _lookup(externalDeclarations, name);
+		 isExternal = true;
+		}
+		if (sym == null) {
+		 SemErr("reference to undefined variable " + name);
+		}
+		
+		if (sym.Item2 != (int)TastierKind.Var && sym.Item2 != (int)TastierKind.Const) {
+		 SemErr("variable or constant type expected but " + sym.Item1 + " has kind " + (TastierType)sym.Item2);
+		}
+		
+		if (sym.Item3 != (int)TastierType.Integer) {
+		 SemErr("integer type expected but " + sym.Item1 + " has type " + (TastierType)sym.Item2);
+		}
+		program.Add(new Instruction("", "Read"));
+		
+		if (sym.Item4 == 0) {
+		 if (isExternal) {
+		   program.Add(new Instruction("", "StoG " + sym.Item1));
+		   // if the symbol is external, we also store it by name. The linker will resolve the name to an address.
+		 } else {
+		   program.Add(new Instruction("", "StoG " + (sym.Item5+3)));
+		 }
+		}
+		else {
+		 int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
+		 program.Add(new Instruction("", "Sto " + lexicalLevelDifference + " " + sym.Item5));
+		}
+		
+	}
+
+	void WriteStat() {
+		TastierType type; 
+		Expect(32);
+		Expr(out type);
+		Expect(22);
+		if (type != TastierType.Integer) {
+		 SemErr("integer type expected");
+		}
+		program.Add(new Instruction("", "Write"));
 		
 	}
 
@@ -1150,7 +1175,7 @@ int getFrameAddress(Scope currentScope)
 		                         currentScope.Add(tempSymbolPointer);
 		printSymbol(tempSymbolPointer);
 		                     
-		Expect(30);
+		Expect(23);
 		Expr(out type);
 		if (type != (TastierType)tempSymbolPointer.Item3) {
 		 SemErr("incompatible types");
@@ -1180,9 +1205,9 @@ int getFrameAddress(Scope currentScope)
 	static readonly bool[,] set = {
 		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
 		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,T,T,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
-		{x,T,x,x, x,x,x,x, x,x,x,T, x,x,T,x, x,x,x,x, x,x,x,T, x,T,T,x, T,T,x,x, x,x,T,T, x,x,x,x, T,x,x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x,x,x, x,x,x,T, x,T,T,x, T,T,x,x, x,x,x,x, x,x,x,x, T,x,x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x,x,x, x,x,x,T, x,T,T,x, T,T,x,x, x,x,T,T, x,x,x,x, T,x,x},
+		{x,T,x,x, x,x,x,x, x,x,x,T, x,x,T,x, x,x,x,x, x,x,x,x, x,x,T,x, T,T,x,T, T,x,T,T, x,x,x,x, T,x,x},
+		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,T,x, T,T,x,T, T,x,x,x, x,x,x,x, T,x,x},
+		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,T,x, T,T,x,T, T,x,T,T, x,x,x,x, T,x,x},
 		{x,x,x,x, x,x,x,x, x,x,x,T, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,T, x,T,x,x, x,x,x}
 
 	};
@@ -1220,16 +1245,16 @@ public class Errors {
 			case 20: s = "\">=\" expected"; break;
 			case 21: s = "\"!=\" expected"; break;
 			case 22: s = "\";\" expected"; break;
-			case 23: s = "\"if\" expected"; break;
-			case 24: s = "\"else\" expected"; break;
-			case 25: s = "\"while\" expected"; break;
-			case 26: s = "\"for(\" expected"; break;
-			case 27: s = "\"do\" expected"; break;
-			case 28: s = "\"read\" expected"; break;
-			case 29: s = "\"write\" expected"; break;
-			case 30: s = "\":=\" expected"; break;
-			case 31: s = "\"?\" expected"; break;
-			case 32: s = "\":\" expected"; break;
+			case 23: s = "\":=\" expected"; break;
+			case 24: s = "\"?\" expected"; break;
+			case 25: s = "\":\" expected"; break;
+			case 26: s = "\"if\" expected"; break;
+			case 27: s = "\"else\" expected"; break;
+			case 28: s = "\"while\" expected"; break;
+			case 29: s = "\"for(\" expected"; break;
+			case 30: s = "\"do\" expected"; break;
+			case 31: s = "\"read\" expected"; break;
+			case 32: s = "\"write\" expected"; break;
 			case 33: s = "\"program\" expected"; break;
 			case 34: s = "\"int\" expected"; break;
 			case 35: s = "\"bool\" expected"; break;
