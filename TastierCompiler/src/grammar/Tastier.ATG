@@ -333,6 +333,7 @@ TOKENS
   number = digit {digit}.
   letter = '\'' (letter | digit | space) '\''.
   string = '"' {letter | digit | space} '"'.
+  dereference = "->".
 
 COMMENTS FROM "/*" TO "*/" NESTED
 COMMENTS FROM "//" TO lf
@@ -351,79 +352,99 @@ AddOp<out Instruction inst>
 
 /*------------------------------------------------------------------------*/
 
-Expr<out TastierType type>      (.  TastierType type1; TastierType type2; Instruction inst; .)
+SymbolIdent<out string name>	(. string tempName; .)
 =
-					(.
-						type = TastierType.Undefined;
-						//this is just to get this to compile, the type will either be changed
-						//or the program will crash
+	Ident<out name>		
+	{ 
+		dereference 
+		Ident<out tempName>	(.	
+						name = name + "->" + tempName;	
 					.)
-(
-  (SimExpr<out type>
-	  [ RelOp<out inst>
-	    SimExpr<out type1>          (.
-					    if (type != type1) {
-					      SemErr("incompatible types");
-					    }
-					    if(type == TastierType.Character)
-					    {
-						SemErr("don't try to do boolean ops with characters <_<");
-					    }
-					    else {
-					      program.Add(inst);
-					      type = TastierType.Boolean;
-					    }
-					.)
-	  ]
-	)
-  |  ('(' Expr<out type> ')' 
-				
-
-	    [ '?' 		        (.
-						if ((TastierType)type != TastierType.Boolean) {
-						  SemErr("boolean type expected");
-						}
-						openLabels.Push(generateLabel());
-						program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
-					.)
-		Expr<out type1>        	(.
-
-						Instruction startOfElse = new Instruction(openLabels.Pop(), "Nop");
-						openLabels.Push(generateLabel());
-						program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
-						program.Add(startOfElse);
-					.)
-
-		":" Expr<out type2>	(. 
-						if (type1 != type2) {
-						  SemErr("(boolean)? type1 : type2, but types 1 and 2 are mismatched!");
-						}
-						program.Add(new Instruction(openLabels.Pop(), "Nop"));
-						type = type1;
-					.)
-	     ]
-	)	
-  ).
+    	}	
+.
 
 /*------------------------------------------------------------------------*/
 
-Factor<out TastierType type>    (.  int n; Symbol sym; string name; int letterNumerical; .)
+SymbolLookup<out Symbol sym, out bool isExternal>	(. string name; .)    
+=                               
+  	SymbolIdent<out name>			(.	
+  							isExternal = false; //CS3071 students can ignore external declarations, since they only deal with compilation of single files.
+							sym = lookup(openScopes, name);
+							if (sym == null) {
+							sym = _lookup(externalDeclarations, name);
+								isExternal = true;
+							}
+
+							if (sym == null) {
+								SemErr("reference to undefined variable " + name);
+							}
+						.)
+.
+
+/*------------------------------------------------------------------------*/
+
+Expr<out TastierType type>      (.  TastierType type1; TastierType type2; Instruction inst; .)
+=
+						(.
+							type = TastierType.Undefined;
+							//this is just to get this to compile, the type will either be changed
+							//or the program will crash
+						.)
+	(
+	  (SimExpr<out type>
+		  [ RelOp<out inst>
+		    SimExpr<out type1>          (.
+						    if (type != type1) {
+						      SemErr("incompatible types");
+						    }
+						    if(type == TastierType.Character)
+						    {
+							SemErr("don't try to do boolean ops with characters <_<");
+						    }
+						    else {
+						      program.Add(inst);
+						      type = TastierType.Boolean;
+						    }
+						.)
+		  ]
+		)
+	  |  ('(' Expr<out type> ')' 
+					
+
+		    [ '?' 		        (.
+							if ((TastierType)type != TastierType.Boolean) {
+							  SemErr("boolean type expected");
+							}
+							openLabels.Push(generateLabel());
+							program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
+						.)
+			Expr<out type1>        	(.
+
+							Instruction startOfElse = new Instruction(openLabels.Pop(), "Nop");
+							openLabels.Push(generateLabel());
+							program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
+							program.Add(startOfElse);
+						.)
+
+			":" Expr<out type2>	(. 
+							if (type1 != type2) {
+							  SemErr("(boolean)? type1 : type2, but types 1 and 2 are mismatched!");
+							}
+							program.Add(new Instruction(openLabels.Pop(), "Nop"));
+							type = type1;
+						.)
+		     ]
+		)	
+	  ).
+
+/*------------------------------------------------------------------------*/
+
+Factor<out TastierType type>    (.  int n; Symbol sym; int letterNumerical; bool isExternal; .)
 =                               (.  type = TastierType.Undefined; .)
-  ( (Ident<out name>             (.	bool isExternal = false; //CS3071 students can ignore external declarations, since they only deal with compilation of single files.
-
-                                    	sym = lookup(openScopes, name);
-                                    	if (sym == null) {
-                                      	sym = _lookup(externalDeclarations, name);
-                                      		isExternal = true;
-                                    	}
-
-                                    	if (sym == null) {
-                                      		SemErr("reference to undefined variable " + name);
-                                    	}
-				.)
-    				
-   VariableAddress<sym, isExternal> 
-   //relevant address is now atop the stack
+(
+	SymbolLookup<out sym, out isExternal>    				
+	VariableAddress<sym, isExternal> 
+	//relevant address is now atop the stack
     
     				(.
                                       type = (TastierType)sym.Item3;
@@ -442,7 +463,6 @@ Factor<out TastierType type>    (.  int n; Symbol sym; string name; int letterNu
                                         }
                                       } else SemErr("variable, constant or array identifier expected");
                                 .)
-	)
 
   | number                      (.
                                     n = Convert.ToInt32(t.val);
@@ -467,7 +487,7 @@ Factor<out TastierType type>    (.  int n; Symbol sym; string name; int letterNu
                                 .)
   | "true"                      (.  program.Add(new Instruction("", "Const " + 1)); type = TastierType.Boolean; .)
   | "false"                     (.  program.Add(new Instruction("", "Const " + 0)); type = TastierType.Boolean; .)
-  ).
+).
 
 /*------------------------------------------------------------------------*/
 
@@ -568,35 +588,26 @@ SimExpr<out TastierType type>   (.  TastierType type1; Instruction inst; .)
 
 /*------------------------------------------------------------------------*/
 
-Stat                            (.  string name; Symbol sym; bool external = false; bool isExternal = false;.)
+Stat                            (. Symbol sym; bool external = false; bool isExternal;.)
 
 = 
-	(Ident<out name>             	(.	
-						sym = lookup(openScopes, name);
-						if (sym == null) {
-						sym = _lookup(externalDeclarations, name);
-							isExternal = true;
-						}
+    	
+(	SymbolLookup<out sym, out isExternal>
 
-						if (sym == null) {
-							SemErr("reference to undefined variable " + name);
-						}
-					.)
-    				
-	  (VariableAssignment<sym, isExternal> ';'
+	(
+		VariableAssignment<sym, isExternal> ';'
 	  
-	  | '(' ')' ';'                 (.
+		| '(' ')' ';'  		(.
 						if ((TastierKind)sym.Item2 != TastierKind.Proc) {
 						  SemErr("object is not a procedure");
 						}
-
 						int currentStackLevel = openScopes.Count;
 						int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4);
 						string procedureLabel = getLabelForProcedureName(lexicalLevelDifference, sym.Item1);
 						program.Add(new Instruction("", "Call " + lexicalLevelDifference + " " + procedureLabel));
 					.)
-	  )
 	)
+)	
 
 | IfStat 
 

@@ -225,6 +225,7 @@ program Test {
 	  testArrays();
 	  testConditionals();
 	  testSwitch();
+	  testStruct();
   }
 }
 

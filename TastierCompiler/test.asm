@@ -565,6 +565,12 @@ L$51: Nop
 Leave
 Ret
 testStruct: Enter 2
+Const 0
+Const 3
+StoI 0
+Const 0
+LoadI 0
+Write
 Leave
 Ret
 Main: Enter 0
@@ -575,5 +581,6 @@ Call 1 testForLoop
 Call 1 testArrays
 Call 1 testConditionals
 Call 1 testSwitch
+Call 1 testStruct
 Leave
 Ret
