@@ -1015,6 +1015,7 @@ Type<out TastierType type>
 =                               (.  type = TastierType.Undefined; .)
  ( "int"                        (.  type = TastierType.Integer; .)
  | "bool"                       (.  type = TastierType.Boolean; .)
+ | "char"			(.  type = TastierType.Character; .)
  ).
 
 /*------------------------------------------------------------------------*/
@@ -1188,8 +1189,9 @@ StructDecl<bool external, string symbolNamePrefix>	(.
 	Ident<out name>				
 	'{'
 	{
-		(ArrayDecl<external, name + "->">
-		| VarDecl<external, name + "->">)
+		(ArrayDecl<external, symbolNamePrefix + name + "->">
+		| VarDecl<external, symbolNamePrefix + name + "->">
+		| StructDecl<external, symbolNamePrefix + name + "->">)
 	}
 	'}'					
 	';'.

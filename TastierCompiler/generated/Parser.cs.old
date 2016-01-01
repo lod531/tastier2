@@ -20,6 +20,7 @@ public class Parser {
 	public const int _number = 2;
 	public const int _letter = 3;
 	public const int _string = 4;
+	public const int _dereference = 5;
 	public const int maxT = 49;
 
 	const bool T = true;
@@ -425,9 +426,9 @@ int getFrameAddress(Scope currentScope)
 
 	void AddOp(out Instruction inst) {
 		inst = new Instruction("", "Add"); 
-		if (la.kind == 5) {
+		if (la.kind == 6) {
 			Get();
-		} else if (la.kind == 6) {
+		} else if (la.kind == 7) {
 			Get();
 			inst = new Instruction("", "Sub"); 
 		} else SynErr(50);
@@ -436,7 +437,7 @@ int getFrameAddress(Scope currentScope)
 	void SymbolIdent(out string name) {
 		string tempName; 
 		Ident(out name);
-		while (la.kind == 7) {
+		while (la.kind == 5) {
 			Get();
 			Ident(out tempName);
 			name = name + "->" + tempName;	
@@ -522,7 +523,7 @@ int getFrameAddress(Scope currentScope)
 	void SimExpr(out TastierType type) {
 		TastierType type1; Instruction inst; 
 		Term(out type);
-		while (la.kind == 5 || la.kind == 6) {
+		while (la.kind == 6 || la.kind == 7) {
 			AddOp(out inst);
 			Term(out type1);
 			if (type != TastierType.Integer || type1 != TastierType.Integer) {
@@ -614,7 +615,7 @@ int getFrameAddress(Scope currentScope)
 			
 			break;
 		}
-		case 6: {
+		case 7: {
 			Get();
 			Factor(out type);
 			if (type != TastierType.Integer) {
@@ -1178,11 +1179,13 @@ int getFrameAddress(Scope currentScope)
 		Expect(48);
 		Ident(out name);
 		Expect(17);
-		while (la.kind == 41 || la.kind == 42 || la.kind == 47) {
+		while (StartOf(7)) {
 			if (la.kind == 47) {
-				ArrayDecl(external, name + "->");
+				ArrayDecl(external, symbolNamePrefix + name + "->");
+			} else if (la.kind == 41 || la.kind == 42) {
+				VarDecl(external, symbolNamePrefix + name + "->");
 			} else {
-				VarDecl(external, name + "->");
+				StructDecl(external, symbolNamePrefix + name + "->");
 			}
 		}
 		Expect(18);
@@ -1197,7 +1200,7 @@ int getFrameAddress(Scope currentScope)
 		
 		Expect(17);
 		ConstProc();
-		while (StartOf(7)) {
+		while (StartOf(8)) {
 			if (la.kind == 41 || la.kind == 42) {
 				VarDecl(external, "");
 			} else if (la.kind == 16) {
@@ -1344,12 +1347,13 @@ int getFrameAddress(Scope currentScope)
 
 	static readonly bool[,] set = {
 		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
-		{x,T,T,T, x,x,T,x, x,x,x,x, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
+		{x,T,T,T, x,x,x,T, x,x,x,x, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
 		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
 		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,T,x,x, x,x,x,x, x,x,x,x, x,T,x,T, T,x,T,T, T,x,x,x, x,T,T,x, x,x,x,T, T,x,x},
 		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,T,x,T, T,x,T,T, T,x,x,x, x,x,x,x, x,x,x,T, T,x,x},
 		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,T,x,T, T,x,T,T, T,x,x,x, x,T,T,x, x,x,x,T, T,x,x},
-		{x,T,T,T, x,x,T,x, T,x,x,x, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
+		{x,T,T,T, x,x,x,T, T,x,x,x, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,T,x, x,x,x,T, T,x,x},
 		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,T,x, T,x,x,x, x,x,x}
 
 	};
@@ -1369,9 +1373,9 @@ public class Errors {
 			case 2: s = "number expected"; break;
 			case 3: s = "letter expected"; break;
 			case 4: s = "string expected"; break;
-			case 5: s = "\"+\" expected"; break;
-			case 6: s = "\"-\" expected"; break;
-			case 7: s = "\"->\" expected"; break;
+			case 5: s = "dereference expected"; break;
+			case 6: s = "\"+\" expected"; break;
+			case 7: s = "\"-\" expected"; break;
 			case 8: s = "\"(\" expected"; break;
 			case 9: s = "\")\" expected"; break;
 			case 10: s = "\"?\" expected"; break;

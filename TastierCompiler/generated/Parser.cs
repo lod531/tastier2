@@ -21,7 +21,7 @@ public class Parser {
 	public const int _letter = 3;
 	public const int _string = 4;
 	public const int _dereference = 5;
-	public const int maxT = 49;
+	public const int maxT = 50;
 
 	const bool T = true;
 	const bool x = false;
@@ -431,7 +431,7 @@ int getFrameAddress(Scope currentScope)
 		} else if (la.kind == 7) {
 			Get();
 			inst = new Instruction("", "Sub"); 
-		} else SynErr(50);
+		} else SynErr(51);
 	}
 
 	void SymbolIdent(out string name) {
@@ -517,7 +517,7 @@ int getFrameAddress(Scope currentScope)
 				type = type1;
 				
 			}
-		} else SynErr(51);
+		} else SynErr(52);
 	}
 
 	void SimExpr(out TastierType type) {
@@ -570,7 +570,7 @@ int getFrameAddress(Scope currentScope)
 			inst = new Instruction("", "Neq"); 
 			break;
 		}
-		default: SynErr(52); break;
+		default: SynErr(53); break;
 		}
 	}
 
@@ -638,7 +638,7 @@ int getFrameAddress(Scope currentScope)
 			program.Add(new Instruction("", "Const " + 0)); type = TastierType.Boolean; 
 			break;
 		}
-		default: SynErr(53); break;
+		default: SynErr(54); break;
 		}
 	}
 
@@ -702,7 +702,7 @@ int getFrameAddress(Scope currentScope)
 		} else if (la.kind == 15) {
 			Get();
 			inst = new Instruction("", "Div"); 
-		} else SynErr(54);
+		} else SynErr(55);
 	}
 
 	void ProcDecl() {
@@ -736,7 +736,7 @@ int getFrameAddress(Scope currentScope)
 		*/
 		
 		while (StartOf(3)) {
-			if (la.kind == 41 || la.kind == 42) {
+			if (la.kind == 41 || la.kind == 42 || la.kind == 43) {
 				VarDecl(external, "");
 			} else if (StartOf(4)) {
 				Stat();
@@ -783,7 +783,7 @@ int getFrameAddress(Scope currentScope)
 		printSymbol(sym);
 		}
 		                          
-		while (la.kind == 43) {
+		while (la.kind == 44) {
 			Get();
 			Ident(out name);
 			name = symbolNamePrefix + name;
@@ -821,7 +821,7 @@ int getFrameAddress(Scope currentScope)
 				string procedureLabel = getLabelForProcedureName(lexicalLevelDifference, sym.Item1);
 				program.Add(new Instruction("", "Call " + lexicalLevelDifference + " " + procedureLabel));
 				
-			} else SynErr(55);
+			} else SynErr(56);
 			break;
 		}
 		case 29: {
@@ -848,11 +848,11 @@ int getFrameAddress(Scope currentScope)
 			WriteStat();
 			break;
 		}
-		case 47: {
+		case 48: {
 			ArrayDecl(external, "");
 			break;
 		}
-		case 48: {
+		case 49: {
 			StructDecl(external, "");
 			break;
 		}
@@ -868,7 +868,7 @@ int getFrameAddress(Scope currentScope)
 			Expect(18);
 			break;
 		}
-		default: SynErr(56); break;
+		default: SynErr(57); break;
 		}
 	}
 
@@ -1129,14 +1129,14 @@ int getFrameAddress(Scope currentScope)
 			program.Add(new Instruction("", "CharWrite"));
 			}	
 			
-		} else SynErr(57);
+		} else SynErr(58);
 		Expect(25);
 	}
 
 	void ArrayDecl(bool external, string symbolNamePrefix) {
 		string name; TastierType type; Scope currentScope = openScopes.Peek(); ArrayList dimensions = new ArrayList(); int n;
 		
-		Expect(47);
+		Expect(48);
 		Type(out type);
 		Ident(out name);
 		Expect(26);
@@ -1165,25 +1165,27 @@ int getFrameAddress(Scope currentScope)
 		printSymbol(sym);
 		}
 		
-		if (la.kind == 43) {
+		if (la.kind == 44) {
 			Get();
 			ArrayDecl(false, symbolNamePrefix);
 		} else if (la.kind == 25) {
 			Get();
-		} else SynErr(58);
+		} else SynErr(59);
 	}
 
 	void StructDecl(bool external, string symbolNamePrefix) {
 		string name; 
 		
-		Expect(48);
+		Expect(49);
 		Ident(out name);
 		Expect(17);
-		while (la.kind == 41 || la.kind == 42 || la.kind == 47) {
-			if (la.kind == 47) {
-				ArrayDecl(external, name + "->");
+		while (StartOf(7)) {
+			if (la.kind == 48) {
+				ArrayDecl(external, symbolNamePrefix + name + "->");
+			} else if (la.kind == 41 || la.kind == 42 || la.kind == 43) {
+				VarDecl(external, symbolNamePrefix + name + "->");
 			} else {
-				VarDecl(external, name + "->");
+				StructDecl(external, symbolNamePrefix + name + "->");
 			}
 		}
 		Expect(18);
@@ -1198,8 +1200,8 @@ int getFrameAddress(Scope currentScope)
 		
 		Expect(17);
 		ConstProc();
-		while (StartOf(7)) {
-			if (la.kind == 41 || la.kind == 42) {
+		while (StartOf(8)) {
+			if (la.kind == 41 || la.kind == 42 || la.kind == 43) {
 				VarDecl(external, "");
 			} else if (la.kind == 16) {
 				ProcDecl();
@@ -1240,7 +1242,7 @@ int getFrameAddress(Scope currentScope)
 
 	void ConstProc() {
 		string name; string label; Scope currentScope = openScopes.Peek(); int enterInstLocation = 0; 
-		Expect(46);
+		Expect(47);
 		name = "Const";
 		                           Symbol tempSymbolPointer = new Symbol(name, (int)TastierKind.Proc, (int)TastierType.Undefined, openScopes.Count, -1, new int[] {1}); 
 		                           currentScope.Add(tempSymbolPointer);
@@ -1264,7 +1266,7 @@ int getFrameAddress(Scope currentScope)
 		 put the right value in.
 		*/
 		
-		while (la.kind == 41 || la.kind == 42) {
+		while (la.kind == 41 || la.kind == 42 || la.kind == 43) {
 			ConstDecl();
 		}
 		
@@ -1281,10 +1283,10 @@ int getFrameAddress(Scope currentScope)
 
 	void ExternDecl() {
 		string name; bool external = true; 
-		Expect(44);
-		if (la.kind == 41 || la.kind == 42) {
+		Expect(45);
+		if (la.kind == 41 || la.kind == 42 || la.kind == 43) {
 			VarDecl(external, "");
-		} else if (la.kind == 45) {
+		} else if (la.kind == 46) {
 			Get();
 			Ident(out name);
 			Expect(25);
@@ -1292,7 +1294,7 @@ int getFrameAddress(Scope currentScope)
 			externalDeclarations.Add(sym); 
 			printSymbol(sym);
 			
-		} else SynErr(59);
+		} else SynErr(60);
 	}
 
 	void Type(out TastierType type) {
@@ -1303,7 +1305,10 @@ int getFrameAddress(Scope currentScope)
 		} else if (la.kind == 42) {
 			Get();
 			type = TastierType.Boolean; 
-		} else SynErr(60);
+		} else if (la.kind == 43) {
+			Get();
+			type = TastierType.Character; 
+		} else SynErr(61);
 	}
 
 	void ConstDecl() {
@@ -1344,14 +1349,15 @@ int getFrameAddress(Scope currentScope)
 	}
 
 	static readonly bool[,] set = {
-		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
-		{x,T,T,T, x,x,x,T, x,x,x,x, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,T,x,x, x,x,x,x, x,x,x,x, x,T,x,T, T,x,T,T, T,x,x,x, x,T,T,x, x,x,x,T, T,x,x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,T,x,T, T,x,T,T, T,x,x,x, x,x,x,x, x,x,x,T, T,x,x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,T,x,T, T,x,T,T, T,x,x,x, x,T,T,x, x,x,x,T, T,x,x},
-		{x,T,T,T, x,x,x,T, T,x,x,x, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,T,x, T,x,x,x, x,x,x}
+		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
+		{x,T,T,T, x,x,x,T, x,x,x,x, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
+		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,T,x,x, x,x,x,x, x,x,x,x, x,T,x,T, T,x,T,T, T,x,x,x, x,T,T,T, x,x,x,x, T,T,x,x},
+		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,T,x,T, T,x,T,T, T,x,x,x, x,x,x,x, x,x,x,x, T,T,x,x},
+		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,T,x,T, T,x,T,T, T,x,x,x, x,T,T,T, x,x,x,x, T,T,x,x},
+		{x,T,T,T, x,x,x,T, T,x,x,x, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,T,T, x,x,x,x, T,T,x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,T,T, x,T,x,x, x,x,x,x}
 
 	};
 } // end Parser
@@ -1408,24 +1414,25 @@ public class Errors {
 			case 40: s = "\"program\" expected"; break;
 			case 41: s = "\"int\" expected"; break;
 			case 42: s = "\"bool\" expected"; break;
-			case 43: s = "\",\" expected"; break;
-			case 44: s = "\"external\" expected"; break;
-			case 45: s = "\"procedure\" expected"; break;
-			case 46: s = "\"Const\" expected"; break;
-			case 47: s = "\"array\" expected"; break;
-			case 48: s = "\"struct\" expected"; break;
-			case 49: s = "??? expected"; break;
-			case 50: s = "invalid AddOp"; break;
-			case 51: s = "invalid Expr"; break;
-			case 52: s = "invalid RelOp"; break;
-			case 53: s = "invalid Factor"; break;
-			case 54: s = "invalid MulOp"; break;
-			case 55: s = "invalid Stat"; break;
+			case 43: s = "\"char\" expected"; break;
+			case 44: s = "\",\" expected"; break;
+			case 45: s = "\"external\" expected"; break;
+			case 46: s = "\"procedure\" expected"; break;
+			case 47: s = "\"Const\" expected"; break;
+			case 48: s = "\"array\" expected"; break;
+			case 49: s = "\"struct\" expected"; break;
+			case 50: s = "??? expected"; break;
+			case 51: s = "invalid AddOp"; break;
+			case 52: s = "invalid Expr"; break;
+			case 53: s = "invalid RelOp"; break;
+			case 54: s = "invalid Factor"; break;
+			case 55: s = "invalid MulOp"; break;
 			case 56: s = "invalid Stat"; break;
-			case 57: s = "invalid WriteStat"; break;
-			case 58: s = "invalid ArrayDecl"; break;
-			case 59: s = "invalid ExternDecl"; break;
-			case 60: s = "invalid Type"; break;
+			case 57: s = "invalid Stat"; break;
+			case 58: s = "invalid WriteStat"; break;
+			case 59: s = "invalid ArrayDecl"; break;
+			case 60: s = "invalid ExternDecl"; break;
+			case 61: s = "invalid Type"; break;
 
 			default: s = "error " + n; break;
 		}

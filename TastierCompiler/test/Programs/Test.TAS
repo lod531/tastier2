@@ -212,9 +212,15 @@ program Test {
 		{
 			int a;
 			int b;
+			struct testWithinTest
+			{
+				array char nestedArray[10];
+			};
 		};
 		test->a := 3;
 		write test->a;
+		test->testWithinTest->nestedArray[0] := 'Y';
+		write test->testWithinTest->nestedArray[0];
 	}
 
   void Main() {

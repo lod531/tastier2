@@ -564,13 +564,35 @@ Jmp L$50
 L$51: Nop
 Leave
 Ret
-testStruct: Enter 2
+testStruct: Enter 12
 Const 0
 Const 3
 StoI 0
 Const 0
 LoadI 0
 Write
+Const 2
+Const 0
+Dup
+Const 10
+Gtr
+FJmp L$56
+ArrayOutOfBounds
+L$56: Nop
+Add
+Const 89
+StoI 0
+Const 2
+Const 0
+Dup
+Const 10
+Gtr
+FJmp L$57
+ArrayOutOfBounds
+L$57: Nop
+Add
+LoadI 0
+CharWrite
 Leave
 Ret
 Main: Enter 0
