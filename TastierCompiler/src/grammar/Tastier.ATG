@@ -612,6 +612,8 @@ Stat                            (.  string name; Symbol sym; bool external = fal
 
 | ArrayDecl<external, "">
 
+| StructDecl<external, "">
+
 | '{' { Stat | VarDecl<external, "">  } '}' .
 
 /*------------------------------------------------------------------------*/
@@ -1167,6 +1169,19 @@ ArrayDecl<bool external, string symbolNamePrefix>	(.
   | ';').
 
 /*------------------------------------------------------------------------*/
+
+StructDecl<bool external, string symbolNamePrefix>	(.
+							 	string name; 
+							.)
+= "struct"
+	Ident<out name>				
+	'{'
+	{
+		(ArrayDecl<external, name + "->">
+		| VarDecl<external, name + "->">)
+	}
+	'}'					
+	';'.
 
 
 

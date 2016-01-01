@@ -206,6 +206,17 @@ program Test {
 		}
 	}
 
+	void testStruct()
+	{
+		struct test
+		{
+			int a;
+			int b;
+		};
+		test->a := 3;
+		write test->a;
+	}
+
   void Main() {
 	  testAssignment();
 	  testBooleanOps();

@@ -1,4 +1,4 @@
-.names 12
+.names 13
 .proc Const
 .Var const0
 .Var const1
@@ -10,6 +10,7 @@
 .proc testArrays
 .proc testConditionals
 .proc testSwitch
+.proc testStruct
 .proc Main
 Const: Enter 3
 Const 99
@@ -561,6 +562,9 @@ L$52: Nop
 Pop
 Jmp L$50
 L$51: Nop
+Leave
+Ret
+testStruct: Enter 2
 Leave
 Ret
 Main: Enter 0
