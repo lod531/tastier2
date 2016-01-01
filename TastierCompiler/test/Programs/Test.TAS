@@ -201,7 +201,7 @@ program Test {
 				break;
 
 				default:
-				write 9999;
+				write "default";
 			}
 		}
 	}

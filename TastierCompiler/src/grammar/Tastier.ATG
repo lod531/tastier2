@@ -332,6 +332,7 @@ TOKENS
   ident  = letter {letter | digit}.
   number = digit {digit}.
   letter = '\'' (letter | digit | space) '\''.
+  string = '"' {letter | digit | space} '"'.
 
 COMMENTS FROM "/*" TO "*/" NESTED
 COMMENTS FROM "//" TO lf
@@ -859,16 +860,34 @@ ReadStat                            (.  string name; Symbol sym; bool isExternal
 
 /*------------------------------------------------------------------------*/
 
-WriteStat                       (.  TastierType type; .)
+WriteStat                       (.  TastierType type; char[] charArray; .)
 
 = 
-  "write"
-  Expr<out type> ';'            (.
-                                    if (type != TastierType.Integer) {
-                                      SemErr("integer type expected");
-                                    }
-                                    program.Add(new Instruction("", "Write"));
-                                .)
+	"write"
+	(Expr<out type>		(.
+					if (type != TastierType.Integer && type != TastierType.Character) {
+						SemErr("integer type expected");
+					}
+					if(type == TastierType.Integer)
+					{
+						program.Add(new Instruction("", "Write"));
+					}
+					else if(type == TastierType.Character)
+					{
+						program.Add(new Instruction("", "CharWrite"));
+					}
+				.)
+
+	| string		(.
+					charArray = t.val.ToCharArray();
+					//altered for bounds because first and last chars are not applicable (they're dashes)
+					for(int i = 1; i < charArray.Length-1; i++)
+					{
+						program.Add(new Instruction("", "Const " + Convert.ToInt32(charArray[i])));
+						program.Add(new Instruction("", "CharWrite"));
+					}	
+				.)
+	) ';'
 
  .
 

@@ -507,8 +507,20 @@ Const 2
 Write
 Jmp L$46
 L$49: Nop
-Const 9999
-Write
+Const 100
+CharWrite
+Const 101
+CharWrite
+Const 102
+CharWrite
+Const 97
+CharWrite
+Const 117
+CharWrite
+Const 108
+CharWrite
+Const 116
+CharWrite
 L$46: Nop
 Pop
 Jmp L$44
