@@ -1,0 +1,188 @@
+cs3071 Documentation							      studentNo: 13319368	
+												;
+INTRODUCTION:
+
+So this report may wind up being a hefty one. We were given additional time to do this particlar
+lab, and so I used to spare time to go through the previous labs and fix all the terrible things
+I did in order to get the tasks done in time. 
+
+The sections will be labeled by what they cover. I'm going to assume a pretty hefty knowledge of
+Tastier and Coco/R workings, this being not lab1 documentation, but lab7. 
+
+The files changed are pretty much all of them, at least the usual suspects (Tastier.ATG of
+course, Test.TAS, the tastier machine and assembler files), so instead of submitting the changed
+files, I'm going to provide a link to the github entry here, as well as submit the 
+TastierCompiler and TastierMachine folders whole. Hopefully that will make making and running 
+the project painless. The github can be found here:
+
+https://github.com/lod531/tastier2
+
+With the relevant folders being TastierCompiler and TastierMachine (the default implementations
+of Tastier are there to cross-reference for whenever I got lost, which I found very useful).
+
+
+
+
+0: REFACTORING OF ALL PREVIOUS LABS
+
+Changes will be covered in the order they appear in the Tastier.ATG file, so hopefully this 
+will make for easy following, if one is inclined to follow. This is all cleaning/polishing/
+redoing the previous labs to make them proper, and to uncut corners that were cur in order to 
+just get the labs done. Day late and dollar short, but the Tastier file is now what it was 
+meant to be.
+												.
+
+--->printSymbol function has been redone to accommodate arrays and structs. Also the whole thing 
+was rewritten in such a way as to make adding new kinds and types of symbols relatively painless.
+
+
+--->getFrameAddress is a new function which keeps track of the stack address within the current
+scope. The previous solution of just counting the number of symbols on the stack was pretty
+silly, and made adding new kinds of symbols a total pain, so this function takes care of all
+your addressing needs. It accounts for variables, arrays and structs and their respective
+size needs.
+
+
+--->letter and string tokens were added to accommodate string literals and char arrays
+
+
+--->SymbolIdent was added to clean up retreiving symbol identifiers, especially with structs now
+in the mix.
+
+
+--->SymbolLookup was added to refactor the symbol lookups all over the TastierFile.
+
+
+--->Expr expression production was augmented with the conditional expression, so now instead
+of conditionals only being viable as a method of assignment, they can appear anywhere where
+an expression could, which, I know, I know, should have been done from the start.
+
+
+--->Factor was totally redone. References to arrays, variables and structs are covered with
+the first production, which is 4 lines of code. Yay. Added letter is a factor, which makes
+it play nice with write (but letters are not allowed in arithmetic for the sake of accidental
+mistakes)
+
+
+--->LoadSymbol was added to refactor the loading of data onto the stack. Note that the load
+does not compute the address, this is left to the VariableAddress production. It is merely a 
+reproducable action symbol.
+
+
+--->Relop has the additional boolean operators, as per previous labs.
+
+
+--->Stat statement production was totally refactored, with everything being split into 
+relevant components, which actually fixed a few bugs I was trying to track down. The entire 
+Stat statement is now 40 lines, as opposed to a few hundred it was before. It was just awful
+to work with.
+
+
+--->VariableAddress production pushes the relevant address of the variable which is being 
+accessed. So this includes variables, global variables, arrays and structs. This is also 
+where the runtime array bounds checking takes place, as well as general array bounds checking
+(can't have a 4D index into a 3D array etc.)
+
+
+--->VariableAssignment production is the variable assignment itself. It does not include the
+SymbolIdent production, but rather takes a symbol as a parameter. This allows to nicely
+split the functionality, allowing increment and decrement assignments to be implemented 
+cleanly. It also cleaned up constant initialization code, and basically anywhere assignment
+was involved.=
+
+
+--->IfStat is the good old if statement.
+
+
+--->WhileStat is the same
+
+
+--->ForStat is the refactored For statement, which now works with increment/decrement 
+assignments (as does anywhere a stat is allowed), as well as conditionals (as conditionals
+are now an expression, and so can also appear anywhere an expression can appear)
+
+
+--->ReadStat is the default read statement, just put as a production of it's own
+
+
+--->WriteStat is the refactored write production, which now takes string literals (previously
+cut due to time constraints). Now works nicely with all types, so that's chars, ints and 
+booleans. Previous implementation was a huge hunk of crap a hundred lines long. This is 20.
+I know, I know, I shouldn't be, but I'm a little proud.
+
+
+--->SwitchStat covered in it's own section below (marked with a number), as it's part of the
+main assignment.
+
+
+--->ConstProc and ConstDecl are the same as per pervious assignments, but cleaner due to all
+the refactoring. Both now fit into the screen at once (constants are now completely implemented
+within 60 lines of code, most of that being comments/spaces.)
+
+
+--->ArrayDecl and StructDecl are covered in their own sections below, what with being part
+of the assignment.
+
+
+--->Strings are now character arrays, and the whole thing is so much nicer.
+
+
+--->Lastly, the code itself is clean now. Things were renamed to more accurately signify their
+semantic meanings, everything is properly indented etc. This is mostly because I finally got
+the hang of vim.
+
+
+
+
+1: SWITCH STATEMENT
+
+The switch statement syntax is as follows:
+
+switch(Expr)
+{
+	case expr:
+	Stat
+	break;
+	.
+	.
+	.
+	default:
+	Stat
+}
+where Expr is expression, so whatever Expr can produce fits in there, and Stat is whatever the
+Stat production can fit in. The breaks are mandatory, as is the default case.
+
+Under the hood it's just a chain of if/elses. After each Stat a jump to the end (post default Stat)
+is inserted, so that if the match succeeded and the case was executed, the PC jumps on out. I won't
+go into detail of how if/elses work, as it's been covered in previous documentation for these labs.
+
+
+
+
+2: STRUCT
+
+The name struct was used, since C is the one true love. The syntax is as follows:
+
+struct Ident
+{
+	Variable | Array | Struct
+}
+
+So structs within structs within structs are fine. The struct is actually implemented quite 
+superficially. The name of the struct is simply prepended onto the names of the symbols declared
+within the struct (with the prefix being passed along as a parameter, allowing for nested structs).
+The names of struct vs symbol are separated by the dereference token. This is the reason for the
+SymbolIdent production. Variables, Arrays, Structs etc. can only be named via Ident, which is
+alphanumerics, so that their names don't clash with the struct structure. However, within assignment
+and factors, SymbolIdent is used to account for the possibility of structs. So, when declaring
+a variable the Ident token is used, but when referencing a variable, SymbolIdent production is used,
+which can consist of Ident {"->" Ident}. But of course, the derefence "operator" cannot appear
+with an Ident, and so the two don't conflict.
+
+It's quite superficial, but could be used further, for example if one were implemented parameters
+and wanted to pass a struct as a parameter, a simple function could push on all relevant symbols
+onto the new stack frame, seeing as they're all identifiable. So I think the implementation is fine.
+
+
+
+3: ARRAY

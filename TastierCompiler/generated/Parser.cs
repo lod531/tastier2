@@ -1121,7 +1121,7 @@ int getFrameAddress(Scope currentScope)
 		Expect(37);
 		if (StartOf(7)) {
 			Expr(out type);
-			if (type != TastierType.Integer && type != TastierType.Character) {
+			if (type != TastierType.Integer && type != TastierType.Character && type != TastierType.Boolean) {
 			SemErr("integer type expected");
 			}
 			if(type == TastierType.Integer)

@@ -897,7 +897,7 @@ WriteStat                       (.  TastierType type; char[] charArray; .)
 = 
 	"write"
 	(Expr<out type>		(.
-					if (type != TastierType.Integer && type != TastierType.Character) {
+					if (type != TastierType.Integer && type != TastierType.Character && type != TastierType.Boolean) {
 						SemErr("integer type expected");
 					}
 					if(type == TastierType.Integer)
