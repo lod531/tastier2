@@ -463,7 +463,6 @@ int getFrameAddress(Scope currentScope)
 			Expect(8);
 			if (la.kind == 9) {
 				Get();
-				Console.Write("STAT -> CONDITIONAL ASSIGNMENT REACHED");
 				if ((TastierType)type != TastierType.Boolean) {
 				 SemErr("boolean type expected");
 				}
@@ -630,13 +629,11 @@ int getFrameAddress(Scope currentScope)
 	void VariableAddress(Symbol sym, bool isExternal) {
 		TastierType type; int numberOfArrayIndexes = 0; 
 		program.Add(new Instruction("", "Const " + (sym.Item5)));
-		Console.Write("STAT -> ADDED CONST ONTO STACK\n\n");
 		if(sym.Item4 == 0 && !isExternal)
 		{
 		//if global, must increment address
 		     program.Add(new Instruction("", "Const " + 3));
 		     program.Add(new Instruction("", "Add"));
-		     Console.Write("STAT -> ADDED 3 TO CONST\n\n");
 		}
 		
 		while (la.kind == 25) {
@@ -646,7 +643,6 @@ int getFrameAddress(Scope currentScope)
 			{
 			SemErr("attempted to index into a non-array variable");
 			}
-			Console.Write("STAT -> ARRAY INDEXING REACHED\n\n");
 			if(type != TastierType.Integer)
 			{
 			SemErr("non-integer index into array");
@@ -678,11 +674,6 @@ int getFrameAddress(Scope currentScope)
 			program.Add(new Instruction("", "Mul")); 
 			}
 			program.Add(new Instruction("", "Add"));
-			for(int i = 0; i < sym.Item6.Length; i++)
-			{
-			Console.Write(sym.Item6[i] + " ");
-			}	
-			Console.Write("\n\n");
 			
 			Expect(26);
 		}
@@ -730,7 +721,7 @@ int getFrameAddress(Scope currentScope)
 		
 		while (StartOf(3)) {
 			if (la.kind == 40 || la.kind == 41) {
-				VarDecl(external);
+				VarDecl(external, "");
 			} else if (StartOf(4)) {
 				Stat();
 			} else {
@@ -759,36 +750,37 @@ int getFrameAddress(Scope currentScope)
 		
 	}
 
-	void VarDecl(bool external) {
+	void VarDecl(bool external, string symbolNamePrefix) {
 		string name; TastierType type; Scope currentScope = openScopes.Peek();
 		
 		Type(out type);
 		Ident(out name);
 		Symbol sym; 
-		                              if (external) {
-		  	sym = new Symbol(name, (int)TastierKind.Var, (int)type, 0, 0, new int[] {1});
-		                                externalDeclarations.Add(sym);
-		    	printSymbol(sym);
-		
-		                              } else {
-		  	sym = new Symbol(name, (int)TastierKind.Var, (int)type, openScopes.Count-1, getFrameAddress(currentScope), new int[] {1});
-		                                currentScope.Add(sym);
-		    	printSymbol(sym);
-		                              }
+		name = symbolNamePrefix + name;
+		if (external) {
+		sym = new Symbol(name, (int)TastierKind.Var, (int)type, 0, 0, new int[] {1});
+		externalDeclarations.Add(sym);
+		printSymbol(sym);
+		} else {
+		sym = new Symbol(name, (int)TastierKind.Var, (int)type, openScopes.Count-1, getFrameAddress(currentScope), new int[] {1});
+		currentScope.Add(sym);
+		printSymbol(sym);
+		}
 		                          
 		while (la.kind == 42) {
 			Get();
 			Ident(out name);
+			name = symbolNamePrefix + name;
 			if (external) {
 			sym = new Symbol(name, (int)TastierKind.Var, (int)type, 0, 0, new int[] {1});
 			printSymbol(sym);
-			 externalDeclarations.Add(sym);
+			     	externalDeclarations.Add(sym);
 			} else {
 			sym = new Symbol(name, (int)TastierKind.Var, (int)type, openScopes.Count-1, getFrameAddress(currentScope), new int[] {1});
 			printSymbol(sym);
-			 currentScope.Add(sym);
+			currentScope.Add(sym);
 			}
-			
+			                          
 		}
 		Expect(24);
 	}
@@ -852,7 +844,7 @@ int getFrameAddress(Scope currentScope)
 			break;
 		}
 		case 46: {
-			ArrayDecl(external);
+			ArrayDecl(external, "");
 			break;
 		}
 		case 16: {
@@ -861,7 +853,7 @@ int getFrameAddress(Scope currentScope)
 				if (StartOf(4)) {
 					Stat();
 				} else {
-					VarDecl(external);
+					VarDecl(external, "");
 				}
 			}
 			Expect(17);
@@ -907,8 +899,6 @@ int getFrameAddress(Scope currentScope)
 			  program.Add(new Instruction("", "StoIG"));
 			  // if the symbol is external, we load it by name. The linker will resolve the name to an address.
 			} else {
-		
-		Console.Write("STAT -> STOIG NOT EXTERNAL REACHED\n\n");
 			  program.Add(new Instruction("", "StoIG"));
 			}
 		} else {
@@ -1134,7 +1124,7 @@ int getFrameAddress(Scope currentScope)
 		Expect(24);
 	}
 
-	void ArrayDecl(bool external) {
+	void ArrayDecl(bool external, string symbolNamePrefix) {
 		string name; TastierType type; Scope currentScope = openScopes.Peek(); ArrayList dimensions = new ArrayList(); int n;
 		
 		Expect(46);
@@ -1155,6 +1145,7 @@ int getFrameAddress(Scope currentScope)
 			Expect(26);
 		}
 		Symbol sym; 
+		name = symbolNamePrefix + name;
 		if (external) {
 		sym = new Symbol(name, (int)TastierKind.Array, (int)type, 0, 0, new int[] {1});
 		externalDeclarations.Add(sym);
@@ -1165,7 +1156,12 @@ int getFrameAddress(Scope currentScope)
 		printSymbol(sym);
 		}
 		
-		Expect(24);
+		if (la.kind == 42) {
+			Get();
+			ArrayDecl(false, symbolNamePrefix);
+		} else if (la.kind == 24) {
+			Get();
+		} else SynErr(56);
 	}
 
 	void Tastier() {
@@ -1178,7 +1174,7 @@ int getFrameAddress(Scope currentScope)
 		ConstProc();
 		while (StartOf(7)) {
 			if (la.kind == 40 || la.kind == 41) {
-				VarDecl(external);
+				VarDecl(external, "");
 			} else if (la.kind == 15) {
 				ProcDecl();
 			} else {
@@ -1261,7 +1257,7 @@ int getFrameAddress(Scope currentScope)
 		string name; bool external = true; 
 		Expect(43);
 		if (la.kind == 40 || la.kind == 41) {
-			VarDecl(external);
+			VarDecl(external, "");
 		} else if (la.kind == 44) {
 			Get();
 			Ident(out name);
@@ -1270,7 +1266,7 @@ int getFrameAddress(Scope currentScope)
 			externalDeclarations.Add(sym); 
 			printSymbol(sym);
 			
-		} else SynErr(56);
+		} else SynErr(57);
 	}
 
 	void Type(out TastierType type) {
@@ -1281,7 +1277,7 @@ int getFrameAddress(Scope currentScope)
 		} else if (la.kind == 41) {
 			Get();
 			type = TastierType.Boolean; 
-		} else SynErr(57);
+		} else SynErr(58);
 	}
 
 	void ConstDecl() {
@@ -1399,8 +1395,9 @@ public class Errors {
 			case 53: s = "invalid Stat"; break;
 			case 54: s = "invalid Stat"; break;
 			case 55: s = "invalid WriteStat"; break;
-			case 56: s = "invalid ExternDecl"; break;
-			case 57: s = "invalid Type"; break;
+			case 56: s = "invalid ArrayDecl"; break;
+			case 57: s = "invalid ExternDecl"; break;
+			case 58: s = "invalid Type"; break;
 
 			default: s = "error " + n; break;
 		}

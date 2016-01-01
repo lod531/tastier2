@@ -380,7 +380,6 @@ Expr<out TastierType type>      (.  TastierType type1; TastierType type2; Instru
 				
 
 	    [ '?' 		        (.
-						Console.Write("STAT -> CONDITIONAL ASSIGNMENT REACHED");
 						if ((TastierType)type != TastierType.Boolean) {
 						  SemErr("boolean type expected");
 						}
@@ -514,7 +513,7 @@ ProcDecl                        (.  string name; string label; Scope currentScop
                                     */
                                 .)
 
-  { VarDecl<external> | 
+  { VarDecl<external, ""> | 
 	   Stat |  (.
                                     openLabels.Push(generateLabel());
                                     program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
@@ -611,71 +610,63 @@ Stat                            (.  string name; Symbol sym; bool external = fal
 
 | WriteStat 
 
-| ArrayDecl<external>
+| ArrayDecl<external, "">
 
-| '{' { Stat | VarDecl<external>  } '}' .
+| '{' { Stat | VarDecl<external, "">  } '}' .
 
 /*------------------------------------------------------------------------*/
 
 VariableAddress<Symbol sym, bool isExternal> (. TastierType type; int numberOfArrayIndexes = 0; .)
 
-=						(.	
-							program.Add(new Instruction("", "Const " + (sym.Item5)));
-							Console.Write("STAT -> ADDED CONST ONTO STACK\n\n");
-							if(sym.Item4 == 0 && !isExternal)
-							{
-								//if global, must increment address
-							      program.Add(new Instruction("", "Const " + 3));
-							      program.Add(new Instruction("", "Add"));
-							      Console.Write("STAT -> ADDED 3 TO CONST\n\n");
-							}
-						.)
-    				
+=					(.	
+						program.Add(new Instruction("", "Const " + (sym.Item5)));
+						if(sym.Item4 == 0 && !isExternal)
+						{
+							//if global, must increment address
+						      program.Add(new Instruction("", "Const " + 3));
+						      program.Add(new Instruction("", "Add"));
+						}
+					.)
+			
 	{
-			'[' Expr<out type>	(.	
-							if(sym.Item2 != (int)TastierKind.Array)
-							{
-								SemErr("attempted to index into a non-array variable");
-							}
-							Console.Write("STAT -> ARRAY INDEXING REACHED\n\n");
-							if(type != TastierType.Integer)
-							{
-								SemErr("non-integer index into array");
-							}
-							numberOfArrayIndexes++;
+		'[' Expr<out type>	(.	
+						if(sym.Item2 != (int)TastierKind.Array)
+						{
+							SemErr("attempted to index into a non-array variable");
+						}
+						if(type != TastierType.Integer)
+						{
+							SemErr("non-integer index into array");
+						}
+						numberOfArrayIndexes++;
 
 
-							//RUNTIME ARRAY BOUNDS CHECKING STARTS HERE
-							//duping expr for comparison purposes
-							program.Add(new Instruction("", "Dup"));
-							//pushing on the relevant array bound
-							program.Add(new Instruction("", "Const " + sym.Item6[sym.Item6.Length - numberOfArrayIndexes]));
-							program.Add(new Instruction("", "Gtr"));
-							openLabels.Push(generateLabel());
-							program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
-							//if(out of Bounds) then error else skip over ArrayOutOfBounds
-							program.Add(new Instruction("", "ArrayOutOfBounds"));
-							//RUNTIME ARRAY BOUNDS CHECKING ENDS HERE
+						//RUNTIME ARRAY BOUNDS CHECKING STARTS HERE
+						//duping expr for comparison purposes
+						program.Add(new Instruction("", "Dup"));
+						//pushing on the relevant array bound
+						program.Add(new Instruction("", "Const " + sym.Item6[sym.Item6.Length - numberOfArrayIndexes]));
+						program.Add(new Instruction("", "Gtr"));
+						openLabels.Push(generateLabel());
+						program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
+						//if(out of Bounds) then error else skip over ArrayOutOfBounds
+						program.Add(new Instruction("", "ArrayOutOfBounds"));
+						//RUNTIME ARRAY BOUNDS CHECKING ENDS HERE
 
 
-							program.Add(new Instruction(openLabels.Pop(), "Nop"));
-							if(numberOfArrayIndexes > sym.Item6.Length)
-							{
-								SemErr("Attempted to index into non-existent array dimension");
-							}
-							for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes; i++)
-							{
-								program.Add(new Instruction("", "Const " + sym.Item6[i]));
-								program.Add(new Instruction("", "Mul")); 
-							}
-							program.Add(new Instruction("", "Add"));
-							for(int i = 0; i < sym.Item6.Length; i++)
-							{
-								Console.Write(sym.Item6[i] + " ");
-							}	
-							Console.Write("\n\n");
-						.)
-						
+						program.Add(new Instruction(openLabels.Pop(), "Nop"));
+						if(numberOfArrayIndexes > sym.Item6.Length)
+						{
+							SemErr("Attempted to index into non-existent array dimension");
+						}
+						for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes; i++)
+						{
+							program.Add(new Instruction("", "Const " + sym.Item6[i]));
+							program.Add(new Instruction("", "Mul")); 
+						}
+						program.Add(new Instruction("", "Add"));
+					.)
+					
 		']'
 	}
    . 
@@ -704,8 +695,6 @@ VariableAssignment<Symbol sym, bool isExternal>	(.  TastierType type; .)
 							  program.Add(new Instruction("", "StoIG"));
 							  // if the symbol is external, we load it by name. The linker will resolve the name to an address.
 							} else {
-
-						Console.Write("STAT -> STOIG NOT EXTERNAL REACHED\n\n");
 							  program.Add(new Instruction("", "StoIG"));
 							}
 						} else {
@@ -951,39 +940,6 @@ SwitchStat			(. TastierType type; .)
 
 /*------------------------------------------------------------------------*/
 
-/*
-IfStat                            (.  TastierType type; .)
-
-= 
-  "if"
-  '(' Expr<out type> ')'        (.
-                                    if ((TastierType)type != TastierType.Boolean) {
-                                      SemErr("boolean type expected");
-                                    }
-                                    openLabels.Push(generateLabel());
-                                    program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
-                                .)
-      Stat                      (.
-                                    Instruction startOfElse = new Instruction(openLabels.Pop(), "Nop");
-                                    /*
-                                       If we got into the "if", we need to
-                                       jump over the "else" so that it
-                                       doesn't get executed.
-                                    */
-                                    openLabels.Push(generateLabel());
-                                    program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
-                                    program.Add(startOfElse);
-                                .)
-      [ "else"
-        Stat
-      ]                         (.  program.Add(new Instruction(openLabels.Pop(), "Nop")); .)
-
-   .
-*/
-
-
-/*------------------------------------------------------------------------*/
-
 Tastier                         (.  string name; bool external = false; .)
 = "program"
   Ident<out name>               (.
@@ -991,7 +947,7 @@ Tastier                         (.  string name; bool external = false; .)
                                 .)
   '{'
   ConstProc
-  { VarDecl<external> | ProcDecl | ExternDecl }
+  { VarDecl<external, ""> | ProcDecl | ExternDecl }
   '}'                           (.
                                     if (openScopes.Peek().Count == 0) {
                                       Warn("Warning: Program " + name + " is empty ");
@@ -1050,39 +1006,42 @@ Type<out TastierType type>
 
 /*------------------------------------------------------------------------*/
 
-VarDecl<bool external>          (.
-                                    string name; TastierType type; Scope currentScope = openScopes.Peek();
-                                .)
+VarDecl<bool external, string symbolNamePrefix>	(.
+						    string name; TastierType type; Scope currentScope = openScopes.Peek();
+						.)
 = Type<out type>
-  Ident<out name>               (.
+  Ident<out name>		(.
 					Symbol sym; 
-                                    if (external) {
-				    	sym = new Symbol(name, (int)TastierKind.Var, (int)type, 0, 0, new int[] {1});
-                                      externalDeclarations.Add(sym);
-				      	printSymbol(sym);
-
-                                    } else {
-				    	sym = new Symbol(name, (int)TastierKind.Var, (int)type, openScopes.Count-1, getFrameAddress(currentScope), new int[] {1});
-                                      currentScope.Add(sym);
-				      	printSymbol(sym);
-                                    }
+					name = symbolNamePrefix + name;
+					if (external) {
+						sym = new Symbol(name, (int)TastierKind.Var, (int)type, 0, 0, new int[] {1});
+						externalDeclarations.Add(sym);
+						printSymbol(sym);
+					} else {
+						sym = new Symbol(name, (int)TastierKind.Var, (int)type, openScopes.Count-1, getFrameAddress(currentScope), new int[] {1});
+						currentScope.Add(sym);
+						printSymbol(sym);
+					}
                                 .)
   { ',' Ident<out name>         (.
-                                    if (external) {
-				    	sym = new Symbol(name, (int)TastierKind.Var, (int)type, 0, 0, new int[] {1});
-				      	printSymbol(sym);
-                                      externalDeclarations.Add(sym);
-                                    } else {
-				    	sym = new Symbol(name, (int)TastierKind.Var, (int)type, openScopes.Count-1, getFrameAddress(currentScope), new int[] {1});
-				      	printSymbol(sym);
-                                      currentScope.Add(sym);
-                                    }
+					name = symbolNamePrefix + name;
+					if (external) {
+						sym = new Symbol(name, (int)TastierKind.Var, (int)type, 0, 0, new int[] {1});
+						printSymbol(sym);
+					      	externalDeclarations.Add(sym);
+					} else {
+						sym = new Symbol(name, (int)TastierKind.Var, (int)type, openScopes.Count-1, getFrameAddress(currentScope), new int[] {1});
+						printSymbol(sym);
+						currentScope.Add(sym);
+					}
                                 .)
   } ';'.
 
+/*------------------------------------------------------------------------*/
+
 ExternDecl                      (.  string name; bool external = true; .)
 = "external"
-  ( VarDecl<external>
+  ( VarDecl<external, "">
   | "procedure" Ident<out name> ';'
                                 (.  
 				 	Symbol sym = new Symbol(name, (int)TastierKind.Proc, (int)TastierType.Undefined, 1, -1, new int[] {1});
@@ -1090,6 +1049,8 @@ ExternDecl                      (.  string name; bool external = true; .)
 					printSymbol(sym);
 				.)
   ) .
+
+/*------------------------------------------------------------------------*/
 
 ConstProc                       (.  string name; string label; Scope currentScope = openScopes.Peek(); int enterInstLocation = 0; .)
 = "Const"
@@ -1137,6 +1098,8 @@ ConstProc                       (.  string name; string label; Scope currentScop
                                     openProcedureDeclarations.Pop();
                                 .).
 
+/*------------------------------------------------------------------------*/
+
 ConstDecl                       (.
                                     string name; TastierType type; Scope currentScope = openScopes.Peek();
                                 .)
@@ -1164,11 +1127,13 @@ ConstDecl                       (.
   			
    ';'.
 
+/*------------------------------------------------------------------------*/
+
 //ARRAY DIMENSIONS STORED IN REVERSE
 //So for a[1][2][3], sym.Item6 will contain [3, 2, 1]
-ArrayDecl<bool external>        (.
-                                    string name; TastierType type; Scope currentScope = openScopes.Peek(); ArrayList dimensions = new ArrayList(); int n;
-                                .)
+ArrayDecl<bool external, string symbolNamePrefix>	(.
+							    string name; TastierType type; Scope currentScope = openScopes.Peek(); ArrayList dimensions = new ArrayList(); int n;
+							.)
 = "array" Type<out type>
   Ident<out name>           
   '[' number 	                (.
@@ -1187,6 +1152,7 @@ ArrayDecl<bool external>        (.
   
   				 (.
 					Symbol sym; 
+					name = symbolNamePrefix + name;
 					if (external) {
 						sym = new Symbol(name, (int)TastierKind.Array, (int)type, 0, 0, new int[] {1});
 						externalDeclarations.Add(sym);
@@ -1197,8 +1163,11 @@ ArrayDecl<bool external>        (.
 						printSymbol(sym);
 					}
 				.)
+  ( ',' ArrayDecl<false, symbolNamePrefix>
+  | ';').
 
-  ';'.
+/*------------------------------------------------------------------------*/
+
 
 
 
