@@ -175,7 +175,7 @@ program Test {
 		int a;
 		int b;
 		b := 43;
-		a := b = 42 ? 45 : 50 ;
+		a := (b = 42) ? 45 : 50 ;
 		write a;
 	}	
 

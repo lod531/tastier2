@@ -351,23 +351,60 @@ AddOp<out Instruction inst>
 
 /*------------------------------------------------------------------------*/
 
-Expr<out TastierType type>      (.  TastierType type1; Instruction inst; .)
-= SimExpr<out type>
-  [ RelOp<out inst>
-    SimExpr<out type1>          (.
-                                    if (type != type1) {
-                                      SemErr("incompatible types");
-                                    }
-				    if(type == TastierType.Character)
-				    {
-				    	SemErr("don't try to do boolean ops with characters <_<");
-			            }
-                                    else {
-                                      program.Add(inst);
-                                      type = TastierType.Boolean;
-                                    }
-                                .)
-  ].
+Expr<out TastierType type>      (.  TastierType type1; TastierType type2; Instruction inst; .)
+=
+					(.
+						type = TastierType.Undefined;
+						//this is just to get this to compile, the type will either be changed
+						//or the program will crash
+					.)
+(
+  (SimExpr<out type>
+	  [ RelOp<out inst>
+	    SimExpr<out type1>          (.
+					    if (type != type1) {
+					      SemErr("incompatible types");
+					    }
+					    if(type == TastierType.Character)
+					    {
+						SemErr("don't try to do boolean ops with characters <_<");
+					    }
+					    else {
+					      program.Add(inst);
+					      type = TastierType.Boolean;
+					    }
+					.)
+	  ]
+	)
+  |  ('(' Expr<out type> ')' 
+				
+
+	    [ '?' 		        (.
+						Console.Write("STAT -> CONDITIONAL ASSIGNMENT REACHED");
+						if ((TastierType)type != TastierType.Boolean) {
+						  SemErr("boolean type expected");
+						}
+						openLabels.Push(generateLabel());
+						program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
+					.)
+		Expr<out type1>        	(.
+
+						Instruction startOfElse = new Instruction(openLabels.Pop(), "Nop");
+						openLabels.Push(generateLabel());
+						program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
+						program.Add(startOfElse);
+					.)
+
+		":" Expr<out type2>	(. 
+						if (type1 != type2) {
+						  SemErr("(boolean)? type1 : type2, but types 1 and 2 are mismatched!");
+						}
+						program.Add(new Instruction(openLabels.Pop(), "Nop"));
+						type = type1;
+					.)
+	     ]
+	)	
+  ).
 
 /*------------------------------------------------------------------------*/
 
@@ -658,58 +695,25 @@ VariableAssignment<Symbol sym, bool isExternal>	(.  TastierType type; .)
 				 .)
 	Expr<out type> 
 				
+				(.
+					type = (TastierType)sym.Item3;
+					if ((TastierKind)sym.Item2 == TastierKind.Var || (TastierKind)sym.Item2 == TastierKind.Const || (TastierKind)sym.Item2 == TastierKind.Array) {
+						if (sym.Item4 == 0) {
 
-	    [ '?' 		        (.
-						Console.Write("STAT -> CONDITIONAL ASSIGNMENT REACHED");
-						if ((TastierType)type != TastierType.Boolean) {
-						  SemErr("boolean type expected");
+							if (isExternal) {
+							  program.Add(new Instruction("", "StoIG"));
+							  // if the symbol is external, we load it by name. The linker will resolve the name to an address.
+							} else {
+
+						Console.Write("STAT -> STOIG NOT EXTERNAL REACHED\n\n");
+							  program.Add(new Instruction("", "StoIG"));
+							}
+						} else {
+							int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
+							program.Add(new Instruction("", "StoI " + lexicalLevelDifference));
 						}
-						openLabels.Push(generateLabel());
-						program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
-					.)
-		Expr<out type>        	(.
-						if (type != (TastierType)sym.Item3) {
-						  SemErr("incompatible types");
-						}
-
-						Instruction startOfElse = new Instruction(openLabels.Pop(), "Nop");
-						/*
-						   If we got into the "if", we need to
-						   jump over the "else" so that it
-						   doesn't get executed.
-						*/
-						openLabels.Push(generateLabel());
-						program.Add(new Instruction("", "Jmp " + openLabels.Peek()));
-						program.Add(startOfElse);
-					.)
-
-		":" Expr<out type>	(. 
-						if (type != (TastierType)sym.Item3) {
-						  SemErr("incompatible types");
-						}
-						program.Add(new Instruction(openLabels.Pop(), "Nop"));
-					.)
-	     ]	
-
-					(.
-							type = (TastierType)sym.Item3;
-							if ((TastierKind)sym.Item2 == TastierKind.Var || (TastierKind)sym.Item2 == TastierKind.Const || (TastierKind)sym.Item2 == TastierKind.Array) {
-								if (sym.Item4 == 0) {
-
-									if (isExternal) {
-									  program.Add(new Instruction("", "StoIG"));
-									  // if the symbol is external, we load it by name. The linker will resolve the name to an address.
-									} else {
-
-								Console.Write("STAT -> STOIG NOT EXTERNAL REACHED\n\n");
-									  program.Add(new Instruction("", "StoIG"));
-									}
-								} else {
-									int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
-									program.Add(new Instruction("", "StoI " + lexicalLevelDifference));
-								}
-							} else SemErr("variable, constant or array identifier expected");
-						.)
+					} else SemErr("variable, constant or array identifier expected");
+				.)
 
 	.
 
