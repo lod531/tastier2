@@ -474,6 +474,8 @@ Factor<out TastierType type>    (.  int n; Symbol sym; int letterNumerical; bool
 
 /*------------------------------------------------------------------------*/
 
+//THIS DOES NOT PUSH ON THE ADDRESS
+//USE VARIABLEADDRESS PRODUCTION FO THAT STUFF
 LoadSymbol<Symbol sym, bool isExternal>
 =
 				(.
@@ -619,6 +621,7 @@ Stat                            (. Symbol sym; bool external = false; bool isExt
 
 = 
     	
+//first possibility is variable assignment or procedure call
 (	SymbolLookup<out sym, out isExternal>
 
 	(
@@ -719,12 +722,33 @@ VariableAssignment<Symbol sym, bool isExternal>	(.  TastierType type; .)
 	VariableAddress<sym, isExternal>
 	//relevant address is now on top of stack
     
-	":="                      (.
-					if ((TastierKind)sym.Item2 != TastierKind.Var && (TastierKind)sym.Item2 != TastierKind.Array) {
-						SemErr("cannot assign to non-variable");
-					}
-				 .)
-	Expr<out type> 
+	(
+		(":="			(.
+						if ((TastierKind)sym.Item2 != TastierKind.Var && (TastierKind)sym.Item2 != TastierKind.Array) {
+							SemErr("cannot assign to non-variable");
+						}
+					.)
+		Expr<out type>) 
+
+		| ("++"			(.
+						program.Add(new Instruction("", "Const " + 1));
+					.)
+		VariableAddress<sym, isExternal>
+		LoadSymbol<sym, isExternal>
+					(.
+						program.Add(new Instruction("", "Add"));
+					.)
+		)
+		| ("--"			(.
+						program.Add(new Instruction("", "Const " + 1));
+					.)
+		VariableAddress<sym, isExternal>
+		LoadSymbol<sym, isExternal>
+					(.
+						program.Add(new Instruction("", "Sub"));
+					.)
+		)
+	)	
 	StoreIntoSymbol<sym, isExternal>				
 .
 

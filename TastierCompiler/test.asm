@@ -241,9 +241,9 @@ StoI 0
 Jmp L$20
 L$21: Nop
 Const 0
+Const 1
 Const 0
 LoadI 0
-Const 1
 Add
 StoI 0
 L$20: Nop
