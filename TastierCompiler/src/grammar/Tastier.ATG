@@ -370,7 +370,7 @@ Expr<out TastierType type>      (.  TastierType type1; Instruction inst; .)
 
 /*------------------------------------------------------------------------*/
 
-Factor<out TastierType type>    (.  int n; Symbol sym; string name; int numberOfArrayIndexes = 0; char letter; .)
+Factor<out TastierType type>    (.  int n; Symbol sym; string name; int numberOfArrayIndexes = 0; int letterNumerical; .)
 =                               (.  type = TastierType.Undefined; .)
   ( (Ident<out name>             (.	bool isExternal = false; //CS3071 students can ignore external declarations, since they only deal with compilation of single files.
 
@@ -437,9 +437,8 @@ Factor<out TastierType type>    (.  int n; Symbol sym; string name; int numberOf
                                 .)
 
  | letter			(.
-  					name = t.val;
-					letter = name.ToCharArray()[1];
-					program.Add(new Instruction("", "Const " + letter));
+					letterNumerical = Convert.ToInt32(t.val.ToCharArray()[1]);
+					program.Add(new Instruction("", "Const " + letterNumerical));
 					type = TastierType.Character;
 				.)
   | '-'

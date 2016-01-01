@@ -30,6 +30,7 @@ data Instruction = Add
                  | Leave
                  | Read
                  | Write
+		 | CharWrite
                  | Halt
                  | Dup
                  | Nop

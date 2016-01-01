@@ -45,6 +45,7 @@ import Control.Monad.RWS.Lazy (RWS, put, get, ask, tell, local)
 import System.IO.Unsafe (unsafePerformIO)
 import System.IO (hFlush, stdout)
 import Data.List (intersperse)
+import Data.Char (chr)
 
 debug' m@(Machine rpc rtp rbp imem _ _) = do {
   putStrLn $
@@ -212,6 +213,12 @@ run = do
           tell $ [show $ smem ! (rtp-1)]
           put $ machine { rpc = rpc + 1, rtp = rtp - 1 }
           run
+
+	Instructions.CharWrite  -> do
+	  tell $ [show $ Data.Char.chr ( fromInteger (toInteger ( smem ! (rtp-1))))]
+	  put $ machine { rpc = rpc + 1, rtp = rtp - 1 }
+	  run
+
 
         Instructions.Leave  -> do
           {-

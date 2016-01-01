@@ -508,7 +508,7 @@ int getFrameAddress(Scope currentScope)
 	}
 
 	void Factor(out TastierType type) {
-		int n; Symbol sym; string name; int numberOfArrayIndexes = 0; char letter; 
+		int n; Symbol sym; string name; int numberOfArrayIndexes = 0; int letterNumerical; 
 		type = TastierType.Undefined; 
 		switch (la.kind) {
 		case 1: {
@@ -577,9 +577,8 @@ int getFrameAddress(Scope currentScope)
 		}
 		case 3: {
 			Get();
-			name = t.val;
-			letter = name.ToCharArray()[1];
-			program.Add(new Instruction("", "Const " + letter));
+			letterNumerical = Convert.ToInt32(t.val.ToCharArray()[1]);
+			program.Add(new Instruction("", "Const " + letterNumerical));
 			type = TastierType.Character;
 			
 			break;
