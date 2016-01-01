@@ -442,27 +442,10 @@ Expr<out TastierType type>      (.  TastierType type1; TastierType type2; Instru
 Factor<out TastierType type>    (.  int n; Symbol sym; int letterNumerical; bool isExternal; .)
 =                               (.  type = TastierType.Undefined; .)
 (
-	SymbolLookup<out sym, out isExternal>    				
+	SymbolLookup<out sym, out isExternal> (. type = (TastierType)sym.Item3; .)    				
 	VariableAddress<sym, isExternal> 
 	//relevant address is now atop the stack
-    
-    				(.
-                                      type = (TastierType)sym.Item3;
-                                      if ((TastierKind)sym.Item2 == TastierKind.Var || (TastierKind)sym.Item2 == TastierKind.Const || (TastierKind)sym.Item2 == TastierKind.Array) {
-                                        if (sym.Item4 == 0) {
-
-                                            if (isExternal) {
-                                              program.Add(new Instruction("", "LoadIG"));
-                                              // if the symbol is external, we load it by name. The linker will resolve the name to an address.
-                                            } else {
-                                              program.Add(new Instruction("", "LoadIG"));
-                                            }
-                                        } else {
-                                            int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
-                                            program.Add(new Instruction("", "LoadI " + lexicalLevelDifference));
-                                        }
-                                      } else SemErr("variable, constant or array identifier expected");
-                                .)
+	LoadSymbol<sym, isExternal>    
 
   | number                      (.
                                     n = Convert.ToInt32(t.val);
@@ -488,6 +471,50 @@ Factor<out TastierType type>    (.  int n; Symbol sym; int letterNumerical; bool
   | "true"                      (.  program.Add(new Instruction("", "Const " + 1)); type = TastierType.Boolean; .)
   | "false"                     (.  program.Add(new Instruction("", "Const " + 0)); type = TastierType.Boolean; .)
 ).
+
+/*------------------------------------------------------------------------*/
+
+LoadSymbol<Symbol sym, bool isExternal>
+=
+				(.
+					if (sym.Item4 == 0) {
+                                            if (isExternal) {
+                                              program.Add(new Instruction("", "LoadIG"));
+                                              // if the symbol is external, we load it by name. The linker will resolve the name to an address.
+                                            } else {
+                                              program.Add(new Instruction("", "LoadIG"));
+                                            }
+                                        } else {
+                                            int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
+                                            program.Add(new Instruction("", "LoadI " + lexicalLevelDifference));
+                                        }
+				.)
+.
+
+/*------------------------------------------------------------------------*/
+
+StoreIntoSymbol<Symbol sym, bool isExternal>
+=
+				(.
+					if (sym.Item4 == 0) 
+					{
+						if (isExternal) 
+						{
+							program.Add(new Instruction("", "StoIG"));
+							// if the symbol is external, we load it by name. The linker will resolve the name to an address.
+						} 
+						else 
+						{
+						  program.Add(new Instruction("", "StoIG"));
+						}
+					} 
+					else 
+					{
+						int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
+						program.Add(new Instruction("", "StoI " + lexicalLevelDifference));
+					}
+				.)
+.
 
 /*------------------------------------------------------------------------*/
 
@@ -698,26 +725,8 @@ VariableAssignment<Symbol sym, bool isExternal>	(.  TastierType type; .)
 					}
 				 .)
 	Expr<out type> 
-				
-				(.
-					type = (TastierType)sym.Item3;
-					if ((TastierKind)sym.Item2 == TastierKind.Var || (TastierKind)sym.Item2 == TastierKind.Const || (TastierKind)sym.Item2 == TastierKind.Array) {
-						if (sym.Item4 == 0) {
-
-							if (isExternal) {
-							  program.Add(new Instruction("", "StoIG"));
-							  // if the symbol is external, we load it by name. The linker will resolve the name to an address.
-							} else {
-							  program.Add(new Instruction("", "StoIG"));
-							}
-						} else {
-							int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
-							program.Add(new Instruction("", "StoI " + lexicalLevelDifference));
-						}
-					} else SemErr("variable, constant or array identifier expected");
-				.)
-
-	.
+	StoreIntoSymbol<sym, isExternal>				
+.
 
 
 /*------------------------------------------------------------------------*/
@@ -853,19 +862,8 @@ ReadStat                            (.  string name; Symbol sym; bool isExternal
                                     }
                                     program.Add(new Instruction("", "Read"));
 
-                                    if (sym.Item4 == 0) {
-                                      if (isExternal) {
-                                        program.Add(new Instruction("", "StoG " + sym.Item1));
-                                        // if the symbol is external, we also store it by name. The linker will resolve the name to an address.
-                                      } else {
-                                        program.Add(new Instruction("", "StoG " + (sym.Item5+3)));
-                                      }
-                                    }
-                                    else {
-                                      int lexicalLevelDifference = Math.Abs(openScopes.Count - sym.Item4)-1;
-                                      program.Add(new Instruction("", "Sto " + lexicalLevelDifference + " " + sym.Item5));
-                                    }
                                 .)
+	StoreIntoSymbol<sym, isExternal>
  .
 
 /*------------------------------------------------------------------------*/
@@ -1126,19 +1124,7 @@ ConstDecl                       (.
                                 .)
 	 ":="                   
     Expr<out type>
-                                (.
-                                    if (type != (TastierType)tempSymbolPointer.Item3) {
-                                      SemErr("incompatible types");
-                                    }
-                                    if (tempSymbolPointer.Item4 == 0) {
-                                        program.Add(new Instruction("", "StoG " + (tempSymbolPointer.Item5+3)));
-                                    }
-                                    else {
-                                      int lexicalLevelDifference = Math.Abs(openScopes.Count - tempSymbolPointer.Item4)-1;
-                                      program.Add(new Instruction("", "Sto " + lexicalLevelDifference + " " + tempSymbolPointer.Item5));
-                                    }
-                                .)
-  			
+ 	StoreIntoSymbol<tempSymbolPointer, false> 
    ';'.
 
 /*------------------------------------------------------------------------*/

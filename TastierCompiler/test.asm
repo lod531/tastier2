@@ -14,9 +14,9 @@
 .proc Main
 Const: Enter 3
 Const 99
-StoG 4
+StoIG
 Const 2
-StoG 5
+StoIG
 Leave
 Ret
 testAssignment: Enter 2
