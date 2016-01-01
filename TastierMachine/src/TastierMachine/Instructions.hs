@@ -35,6 +35,7 @@ data Instruction = Add
                  | Dup
                  | Nop
 		 | Pop
+		 | ArrayOutOfBounds 
                  deriving (Eq, Ord, Show, Enum)
 
 data InstructionWord = Nullary Instruction

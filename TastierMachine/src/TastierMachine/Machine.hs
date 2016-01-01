@@ -90,6 +90,8 @@ run = do
         Instructions.Halt -> do
           return ()
 
+        Instructions.ArrayOutOfBounds -> error "Error! Array out of bounds index!"
+
         Instructions.Dup -> do
           put $ machine { rpc = rpc + 1, rtp = rtp + 1,
                           smem = (smem // [(rtp, smem ! (rtp-1))]) }

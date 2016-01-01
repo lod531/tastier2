@@ -325,6 +325,12 @@ FJmp L$31
 Const 6
 Const 2
 LoadI 0
+Dup
+Const 3
+Gtr
+FJmp L$32
+ArrayOutOfBounds
+L$32: Nop
 Const 2
 Mul
 Const 2
@@ -332,11 +338,23 @@ Mul
 Add
 Const 1
 LoadI 0
+Dup
+Const 2
+Gtr
+FJmp L$33
+ArrayOutOfBounds
+L$33: Nop
 Const 2
 Mul
 Add
 Const 0
 LoadI 0
+Dup
+Const 2
+Gtr
+FJmp L$34
+ArrayOutOfBounds
+L$34: Nop
 Add
 Const 2
 LoadI 0
@@ -365,57 +383,57 @@ L$25: Nop
 Const 2
 Const 0
 StoI 0
-Jmp L$32
-L$33: Nop
-Const 2
-Const 2
-LoadI 0
-Const 1
-Add
-StoI 0
-L$32: Nop
-Const 2
-LoadI 0
-Const 5
-LoadI 0
-Lss
-FJmp L$34
-Const 1
-Const 0
-StoI 0
 Jmp L$35
 L$36: Nop
-Const 1
-Const 1
+Const 2
+Const 2
 LoadI 0
 Const 1
 Add
 StoI 0
 L$35: Nop
+Const 2
+LoadI 0
+Const 5
+LoadI 0
+Lss
+FJmp L$37
+Const 1
+Const 0
+StoI 0
+Jmp L$38
+L$39: Nop
+Const 1
+Const 1
+LoadI 0
+Const 1
+Add
+StoI 0
+L$38: Nop
 Const 1
 LoadI 0
 Const 4
 LoadI 0
 Lss
-FJmp L$37
+FJmp L$40
 Const 0
 Const 0
 StoI 0
-Jmp L$38
-L$39: Nop
+Jmp L$41
+L$42: Nop
 Const 0
 Const 0
 LoadI 0
 Const 1
 Add
 StoI 0
-L$38: Nop
+L$41: Nop
 Const 0
 LoadI 0
 Const 3
 LoadI 0
 Lss
-FJmp L$40
+FJmp L$43
 Const 6
 Const 2
 LoadI 0
@@ -434,12 +452,45 @@ LoadI 0
 Add
 LoadI 0
 Write
+Jmp L$42
+L$43: Nop
 Jmp L$39
 L$40: Nop
 Jmp L$36
 L$37: Nop
-Jmp L$33
-L$34: Nop
+Const 6
+Const 3
+Dup
+Const 3
+Gtr
+FJmp L$44
+ArrayOutOfBounds
+L$44: Nop
+Const 2
+Mul
+Const 2
+Mul
+Add
+Const 2
+Dup
+Const 2
+Gtr
+FJmp L$45
+ArrayOutOfBounds
+L$45: Nop
+Const 2
+Mul
+Add
+Const 3
+Dup
+Const 2
+Gtr
+FJmp L$46
+ArrayOutOfBounds
+L$46: Nop
+Add
+Const 1024
+StoI 0
 Leave
 Ret
 testConditionals: Enter 2
@@ -451,12 +502,12 @@ Const 1
 LoadI 0
 Const 42
 Equ
-FJmp L$41
+FJmp L$47
 Const 45
-Jmp L$42
-L$41: Nop
+Jmp L$48
+L$47: Nop
 Const 50
-L$42: Nop
+L$48: Nop
 StoI 0
 Const 0
 LoadI 0
@@ -467,46 +518,46 @@ testSwitch: Enter 1
 Const 0
 Const 0
 StoI 0
-Jmp L$43
-L$44: Nop
+Jmp L$49
+L$50: Nop
 Const 0
 Const 0
 LoadI 0
 Const 1
 Add
 StoI 0
-L$43: Nop
+L$49: Nop
 Const 0
 LoadI 0
 Const 4
 Lss
-FJmp L$45
+FJmp L$51
 Const 0
 LoadI 0
 Dup
 Const 0
 Equ
-FJmp L$47
+FJmp L$53
 Const 0
 Write
-Jmp L$46
-L$47: Nop
+Jmp L$52
+L$53: Nop
 Dup
 Const 1
 Equ
-FJmp L$48
+FJmp L$54
 Const 1
 Write
-Jmp L$46
-L$48: Nop
+Jmp L$52
+L$54: Nop
 Dup
 Const 2
 Equ
-FJmp L$49
+FJmp L$55
 Const 2
 Write
-Jmp L$46
-L$49: Nop
+Jmp L$52
+L$55: Nop
 Const 100
 CharWrite
 Const 101
@@ -521,10 +572,10 @@ Const 108
 CharWrite
 Const 116
 CharWrite
-L$46: Nop
+L$52: Nop
 Pop
-Jmp L$44
-L$45: Nop
+Jmp L$50
+L$51: Nop
 Leave
 Ret
 Main: Enter 0

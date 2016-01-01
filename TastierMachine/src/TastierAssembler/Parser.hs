@@ -36,9 +36,6 @@ parseInstruction lineNumber text =
     ["LoadIG"]      -> Right $ I.Nullary I.LoadIG
     ["StoIG"]       -> Right $ I.Nullary I.StoIG
 
-
-
-
     ["Load", a, b]  ->
       let a' = B.readInteger a
           b' = B.readInteger b
@@ -134,6 +131,7 @@ parseInstruction lineNumber text =
     ["Halt"]        -> Right $ I.Nullary I.Halt
     ["Dup"]         -> Right $ I.Nullary I.Dup
     ["Nop"]         -> Right $ I.Nullary I.Nop
+    ["ArrayOutOfBounds"] -> Right $ I.Nullary I.ArrayOutOfBounds
     _               -> error $ "Line " ++ show lineNumber ++ ": " ++
                                "unknown instruction " ++ show text
   where

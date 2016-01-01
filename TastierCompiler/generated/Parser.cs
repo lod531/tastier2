@@ -839,6 +839,16 @@ int getFrameAddress(Scope currentScope)
 			SemErr("non-integer index into array");
 			}
 			numberOfArrayIndexes++;
+			//duping expr for comparison purposes
+			program.Add(new Instruction("", "Dup"));
+			//pushing on the relevant array bound
+			program.Add(new Instruction("", "Const " + sym.Item6[sym.Item6.Length - numberOfArrayIndexes]));
+			program.Add(new Instruction("", "Gtr"));
+			openLabels.Push(generateLabel());
+			program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
+			//if(out of Bounds) then error else skip over ArrayOutOfBounds
+			program.Add(new Instruction("", "ArrayOutOfBounds"));
+			program.Add(new Instruction(openLabels.Pop(), "Nop"));
 			if(numberOfArrayIndexes > sym.Item6.Length)
 			{
 			SemErr("Attempted to index into non-existent array dimension");
