@@ -167,7 +167,6 @@ program Test {
 				}
 			}
 		}
-		testArray[3][2][3] := 1024;
 	}
 
 	void testConditionals()

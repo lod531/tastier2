@@ -437,29 +437,6 @@ FJmp L$43
 Const 6
 Const 2
 LoadI 0
-Const 2
-Mul
-Const 2
-Mul
-Add
-Const 1
-LoadI 0
-Const 2
-Mul
-Add
-Const 0
-LoadI 0
-Add
-LoadI 0
-Write
-Jmp L$42
-L$43: Nop
-Jmp L$39
-L$40: Nop
-Jmp L$36
-L$37: Nop
-Const 6
-Const 3
 Dup
 Const 3
 Gtr
@@ -471,7 +448,8 @@ Mul
 Const 2
 Mul
 Add
-Const 2
+Const 1
+LoadI 0
 Dup
 Const 2
 Gtr
@@ -481,7 +459,8 @@ L$45: Nop
 Const 2
 Mul
 Add
-Const 3
+Const 0
+LoadI 0
 Dup
 Const 2
 Gtr
@@ -489,8 +468,14 @@ FJmp L$46
 ArrayOutOfBounds
 L$46: Nop
 Add
-Const 1024
-StoI 0
+LoadI 0
+Write
+Jmp L$42
+L$43: Nop
+Jmp L$39
+L$40: Nop
+Jmp L$36
+L$37: Nop
 Leave
 Ret
 testConditionals: Enter 2

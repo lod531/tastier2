@@ -475,31 +475,31 @@ int getFrameAddress(Scope currentScope)
 	void RelOp(out Instruction inst) {
 		inst = new Instruction("", "Equ"); 
 		switch (la.kind) {
-		case 18: {
+		case 16: {
 			Get();
 			break;
 		}
-		case 19: {
+		case 17: {
 			Get();
 			inst = new Instruction("", "Lss"); 
 			break;
 		}
-		case 20: {
+		case 18: {
 			Get();
 			inst = new Instruction("", "Gtr"); 
 			break;
 		}
-		case 21: {
+		case 19: {
 			Get();
 			inst = new Instruction("", "Leq"); 
 			break;
 		}
-		case 22: {
+		case 20: {
 			Get();
 			inst = new Instruction("", "Geq"); 
 			break;
 		}
-		case 23: {
+		case 21: {
 			Get();
 			inst = new Instruction("", "Neq"); 
 			break;
@@ -509,7 +509,7 @@ int getFrameAddress(Scope currentScope)
 	}
 
 	void Factor(out TastierType type) {
-		int n; Symbol sym; string name; int numberOfArrayIndexes = 0; int letterNumerical; 
+		int n; Symbol sym; string name; int letterNumerical; 
 		type = TastierType.Undefined; 
 		switch (la.kind) {
 		case 1: {
@@ -525,29 +525,8 @@ int getFrameAddress(Scope currentScope)
 			if (sym == null) {
 			 		SemErr("reference to undefined variable " + name);
 			}
-			program.Add(new Instruction("", "Const " + (sym.Item5)));
 			
-			while (la.kind == 7) {
-				Get();
-				Expr(out type);
-				if(type != TastierType.Integer)
-				{
-				SemErr("non-integer index into array");
-				}
-				numberOfArrayIndexes++;
-				if(numberOfArrayIndexes > sym.Item6.Length)
-				{
-				SemErr("Attempted to index into non-existent array dimension");
-				}
-				for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes; i++)
-				{
-				program.Add(new Instruction("", "Const " + sym.Item6[i]));
-				program.Add(new Instruction("", "Mul")); 
-				}
-				program.Add(new Instruction("", "Add"));
-				
-				Expect(8);
-			}
+			VariableAddress(sym, isExternal);
 			type = (TastierType)sym.Item3;
 			if ((TastierKind)sym.Item2 == TastierKind.Var || (TastierKind)sym.Item2 == TastierKind.Const || (TastierKind)sym.Item2 == TastierKind.Array) {
 			 if (sym.Item4 == 0) {
@@ -556,8 +535,6 @@ int getFrameAddress(Scope currentScope)
 			       program.Add(new Instruction("", "LoadIG"));
 			       // if the symbol is external, we load it by name. The linker will resolve the name to an address.
 			     } else {
-			program.Add(new Instruction("", "Const " + 3));
-			program.Add(new Instruction("", "Add"));
 			       program.Add(new Instruction("", "LoadIG"));
 			     }
 			 } else {
@@ -597,12 +574,12 @@ int getFrameAddress(Scope currentScope)
 			
 			break;
 		}
-		case 9: {
+		case 7: {
 			Get();
 			program.Add(new Instruction("", "Const " + 1)); type = TastierType.Boolean; 
 			break;
 		}
-		case 10: {
+		case 8: {
 			Get();
 			program.Add(new Instruction("", "Const " + 0)); type = TastierType.Boolean; 
 			break;
@@ -616,11 +593,72 @@ int getFrameAddress(Scope currentScope)
 		name = t.val; 
 	}
 
+	void VariableAddress(Symbol sym, bool isExternal) {
+		TastierType type; int numberOfArrayIndexes = 0; 
+		program.Add(new Instruction("", "Const " + (sym.Item5)));
+		Console.Write("STAT -> ADDED CONST ONTO STACK\n\n");
+		if(sym.Item4 == 0 && !isExternal)
+		{
+		//if global, must increment address
+		     program.Add(new Instruction("", "Const " + 3));
+		     program.Add(new Instruction("", "Add"));
+		     Console.Write("STAT -> ADDED 3 TO CONST\n\n");
+		}
+		
+		while (la.kind == 23) {
+			Get();
+			Expr(out type);
+			if(sym.Item2 != (int)TastierKind.Array)
+			{
+			SemErr("attempted to index into a non-array variable");
+			}
+			Console.Write("STAT -> ARRAY INDEXING REACHED\n\n");
+			if(type != TastierType.Integer)
+			{
+			SemErr("non-integer index into array");
+			}
+			numberOfArrayIndexes++;
+			
+			
+			//RUNTIME ARRAY BOUNDS CHECKING STARTS HERE
+			//duping expr for comparison purposes
+			program.Add(new Instruction("", "Dup"));
+			//pushing on the relevant array bound
+			program.Add(new Instruction("", "Const " + sym.Item6[sym.Item6.Length - numberOfArrayIndexes]));
+			program.Add(new Instruction("", "Gtr"));
+			openLabels.Push(generateLabel());
+			program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
+			//if(out of Bounds) then error else skip over ArrayOutOfBounds
+			program.Add(new Instruction("", "ArrayOutOfBounds"));
+			//RUNTIME ARRAY BOUNDS CHECKING ENDS HERE
+			
+			
+			program.Add(new Instruction(openLabels.Pop(), "Nop"));
+			if(numberOfArrayIndexes > sym.Item6.Length)
+			{
+			SemErr("Attempted to index into non-existent array dimension");
+			}
+			for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes; i++)
+			{
+			program.Add(new Instruction("", "Const " + sym.Item6[i]));
+			program.Add(new Instruction("", "Mul")); 
+			}
+			program.Add(new Instruction("", "Add"));
+			for(int i = 0; i < sym.Item6.Length; i++)
+			{
+			Console.Write(sym.Item6[i] + " ");
+			}	
+			Console.Write("\n\n");
+			
+			Expect(24);
+		}
+	}
+
 	void MulOp(out Instruction inst) {
 		inst = new Instruction("", "Mul"); 
-		if (la.kind == 11) {
+		if (la.kind == 9) {
 			Get();
-		} else if (la.kind == 12) {
+		} else if (la.kind == 10) {
 			Get();
 			inst = new Instruction("", "Div"); 
 		} else SynErr(51);
@@ -628,7 +666,7 @@ int getFrameAddress(Scope currentScope)
 
 	void ProcDecl() {
 		string name; string label; Scope currentScope = openScopes.Peek(); int enterInstLocation = 0; bool external = false; 
-		Expect(13);
+		Expect(11);
 		Ident(out name);
 		Symbol sym = new Symbol(name, (int)TastierKind.Proc, (int)TastierType.Undefined, openScopes.Count, -1, new int[] {1});
 		                         currentScope.Add(sym);
@@ -636,9 +674,9 @@ int getFrameAddress(Scope currentScope)
 		                         openScopes.Push(new Scope());
 		                         currentScope = openScopes.Peek();
 		                     
+		Expect(12);
+		Expect(13);
 		Expect(14);
-		Expect(15);
-		Expect(16);
 		program.Add(new Instruction("", "Enter 0"));
 		enterInstLocation = program.Count - 1;
 		label = generateProcedureName(name);
@@ -676,7 +714,7 @@ int getFrameAddress(Scope currentScope)
 				program.Add(new Instruction(openLabels.Pop(), "Nop")); 
 			}
 		}
-		Expect(17);
+		Expect(15);
 		program.Add(new Instruction("", "Leave"));
 		program.Add(new Instruction("", "Ret"));
 		openScopes.Pop();
@@ -718,7 +756,7 @@ int getFrameAddress(Scope currentScope)
 			}
 			
 		}
-		Expect(24);
+		Expect(22);
 	}
 
 	void Stat() {
@@ -736,13 +774,13 @@ int getFrameAddress(Scope currentScope)
 			SemErr("reference to undefined variable " + name);
 			}
 			
-			if (la.kind == 7 || la.kind == 25) {
+			if (la.kind == 23 || la.kind == 25) {
 				VariableAssignment(sym, isExternal);
-				Expect(24);
-			} else if (la.kind == 14) {
+				Expect(22);
+			} else if (la.kind == 12) {
 				Get();
-				Expect(15);
-				Expect(24);
+				Expect(13);
+				Expect(22);
 				if ((TastierKind)sym.Item2 != TastierKind.Proc) {
 				 SemErr("object is not a procedure");
 				}
@@ -783,7 +821,7 @@ int getFrameAddress(Scope currentScope)
 			ArrayDecl(external);
 			break;
 		}
-		case 16: {
+		case 14: {
 			Get();
 			while (StartOf(4)) {
 				if (StartOf(3)) {
@@ -792,7 +830,7 @@ int getFrameAddress(Scope currentScope)
 					VarDecl(external);
 				}
 			}
-			Expect(17);
+			Expect(15);
 			break;
 		}
 		default: SynErr(53); break;
@@ -802,7 +840,7 @@ int getFrameAddress(Scope currentScope)
 	void Term(out TastierType type) {
 		TastierType type1; Instruction inst; 
 		Factor(out type);
-		while (la.kind == 11 || la.kind == 12) {
+		while (la.kind == 9 || la.kind == 10) {
 			MulOp(out inst);
 			Factor(out type1);
 			if (type != TastierType.Integer ||
@@ -819,57 +857,11 @@ int getFrameAddress(Scope currentScope)
 	}
 
 	void VariableAssignment(Symbol sym, bool isExternal) {
-		TastierType type; int numberOfArrayIndexes = 0;
-		program.Add(new Instruction("", "Const " + (sym.Item5)));
-		Console.Write("STAT -> ADDED CONST ONTO STACK\n\n");
-		if(sym.Item4 == 0 && !isExternal)
-		{
-		//if global, must increment address
-		     program.Add(new Instruction("", "Const " + 3));
-		     program.Add(new Instruction("", "Add"));
-		     Console.Write("STAT -> ADDED 3 TO CONST\n\n");
-		}
-		
-		while (la.kind == 7) {
-			Get();
-			Expr(out type);
-			Console.Write("STAT -> ARRAY INDEXING REACHED\n\n");
-			if(type != TastierType.Integer)
-			{
-			SemErr("non-integer index into array");
-			}
-			numberOfArrayIndexes++;
-			//duping expr for comparison purposes
-			program.Add(new Instruction("", "Dup"));
-			//pushing on the relevant array bound
-			program.Add(new Instruction("", "Const " + sym.Item6[sym.Item6.Length - numberOfArrayIndexes]));
-			program.Add(new Instruction("", "Gtr"));
-			openLabels.Push(generateLabel());
-			program.Add(new Instruction("", "FJmp " + openLabels.Peek()));
-			//if(out of Bounds) then error else skip over ArrayOutOfBounds
-			program.Add(new Instruction("", "ArrayOutOfBounds"));
-			program.Add(new Instruction(openLabels.Pop(), "Nop"));
-			if(numberOfArrayIndexes > sym.Item6.Length)
-			{
-			SemErr("Attempted to index into non-existent array dimension");
-			}
-			for(int i = 0; i < sym.Item6.Length - numberOfArrayIndexes; i++)
-			{
-			program.Add(new Instruction("", "Const " + sym.Item6[i]));
-			program.Add(new Instruction("", "Mul")); 
-			}
-			program.Add(new Instruction("", "Add"));
-			for(int i = 0; i < sym.Item6.Length; i++)
-			{
-			Console.Write(sym.Item6[i] + " ");
-			}	
-			Console.Write("\n\n");
-			
-			Expect(8);
-		}
+		TastierType type; 
+		VariableAddress(sym, isExternal);
 		Expect(25);
 		if ((TastierKind)sym.Item2 != TastierKind.Var && (TastierKind)sym.Item2 != TastierKind.Array) {
-		 SemErr("cannot assign to non-variable");
+		SemErr("cannot assign to non-variable");
 		}
 		
 		Expr(out type);
@@ -928,9 +920,9 @@ int getFrameAddress(Scope currentScope)
 	void IfStat() {
 		TastierType type; 
 		Expect(28);
-		Expect(14);
+		Expect(12);
 		Expr(out type);
-		Expect(15);
+		Expect(13);
 		if ((TastierType)type != TastierType.Boolean) {
 		 SemErr("boolean type expected");
 		}
@@ -967,8 +959,8 @@ int getFrameAddress(Scope currentScope)
 							//signifies the end of the
 							//switch statement
 		
-		Expect(15);
-		Expect(16);
+		Expect(13);
+		Expect(14);
 		while (la.kind == 36) {
 			Get();
 			program.Add(new Instruction("", "Dup"));
@@ -995,7 +987,7 @@ int getFrameAddress(Scope currentScope)
 		program.Add(new Instruction(endOfSwitchStatement, "Nop"));
 		program.Add(new Instruction("", "Pop"));
 		
-		Expect(17);
+		Expect(15);
 	}
 
 	void WhileStat() {
@@ -1005,9 +997,9 @@ int getFrameAddress(Scope currentScope)
 		openLabels.Push(generateLabel()); //second label is for the loop end
 		program.Add(new Instruction(loopStartLabel, "Nop"));
 		
-		Expect(14);
+		Expect(12);
 		Expr(out type);
-		Expect(15);
+		Expect(13);
 		if ((TastierType)type != TastierType.Boolean) {
 		 SemErr("boolean type expected");
 		}
@@ -1035,7 +1027,7 @@ int getFrameAddress(Scope currentScope)
 			
 			VariableAssignment(sym, isExternal);
 		}
-		Expect(24);
+		Expect(22);
 		string afterUpdateActionLabel = generateLabel();
 		program.Add(new Instruction("", "Jmp " + afterUpdateActionLabel));
 		//this skips the update action the first time the loop is ran
@@ -1056,14 +1048,14 @@ int getFrameAddress(Scope currentScope)
 		VariableAssignment(sym, isExternal);
 		program.Add(new Instruction(afterUpdateActionLabel, "Nop"));
 		
-		Expect(24);
+		Expect(22);
 		Expr(out type);
 		if ((TastierType)type != TastierType.Boolean) {
 		 SemErr("boolean type expected");
 		}
 		program.Add(new Instruction("", "FJmp " + openLabels.Peek())); // jump to the loop end label if condition is false
 		
-		Expect(15);
+		Expect(13);
 		Expect(32);
 		Stat();
 		program.Add(new Instruction("", "Jmp " + loopStartLabel));
@@ -1075,7 +1067,7 @@ int getFrameAddress(Scope currentScope)
 		string name; Symbol sym; bool isExternal = false;
 		Expect(33);
 		Ident(out name);
-		Expect(24);
+		Expect(22);
 		sym = lookup(openScopes, name);
 		if (sym == null) {
 		 sym = _lookup(externalDeclarations, name);
@@ -1137,7 +1129,7 @@ int getFrameAddress(Scope currentScope)
 			}	
 			
 		} else SynErr(54);
-		Expect(24);
+		Expect(22);
 	}
 
 	void ArrayDecl(bool external) {
@@ -1146,19 +1138,19 @@ int getFrameAddress(Scope currentScope)
 		Expect(46);
 		Type(out type);
 		Ident(out name);
-		Expect(7);
+		Expect(23);
 		Expect(2);
 		n = Convert.ToInt32(t.val);
 		dimensions.Insert(0, n);
 		
-		Expect(8);
-		while (la.kind == 7) {
+		Expect(24);
+		while (la.kind == 23) {
 			Get();
 			Expect(2);
 			n = Convert.ToInt32(t.val);
 			dimensions.Insert(0, n);
 			
-			Expect(8);
+			Expect(24);
 		}
 		Symbol sym; 
 		if (external) {
@@ -1171,7 +1163,7 @@ int getFrameAddress(Scope currentScope)
 		printSymbol(sym);
 		}
 		
-		Expect(24);
+		Expect(22);
 	}
 
 	void Tastier() {
@@ -1180,18 +1172,18 @@ int getFrameAddress(Scope currentScope)
 		Ident(out name);
 		openScopes.Push(new Scope());
 		
-		Expect(16);
+		Expect(14);
 		ConstProc();
 		while (StartOf(6)) {
 			if (la.kind == 40 || la.kind == 41) {
 				VarDecl(external);
-			} else if (la.kind == 13) {
+			} else if (la.kind == 11) {
 				ProcDecl();
 			} else {
 				ExternDecl();
 			}
 		}
-		Expect(17);
+		Expect(15);
 		if (openScopes.Peek().Count == 0) {
 		 Warn("Warning: Program " + name + " is empty ");
 		}
@@ -1230,7 +1222,7 @@ int getFrameAddress(Scope currentScope)
 		                           currentScope.Add(tempSymbolPointer);
 		printSymbol(tempSymbolPointer);
 		                       
-		Expect(16);
+		Expect(14);
 		program.Add(new Instruction("", "Enter 0"));
 		enterInstLocation = program.Count - 1;
 		label = generateProcedureName(name);
@@ -1252,7 +1244,7 @@ int getFrameAddress(Scope currentScope)
 			ConstDecl();
 		}
 		
-		Expect(17);
+		Expect(15);
 		program.Add(new Instruction("", "Leave"));
 		program.Add(new Instruction("", "Ret"));
 		// now we can generate the Enter instruction properly
@@ -1271,7 +1263,7 @@ int getFrameAddress(Scope currentScope)
 		} else if (la.kind == 44) {
 			Get();
 			Ident(out name);
-			Expect(24);
+			Expect(22);
 			Symbol sym = new Symbol(name, (int)TastierKind.Proc, (int)TastierType.Undefined, 1, -1, new int[] {1});
 			externalDeclarations.Add(sym); 
 			printSymbol(sym);
@@ -1313,7 +1305,7 @@ int getFrameAddress(Scope currentScope)
 		 program.Add(new Instruction("", "Sto " + lexicalLevelDifference + " " + tempSymbolPointer.Item5));
 		}
 		
-		Expect(24);
+		Expect(22);
 	}
 
 
@@ -1329,12 +1321,12 @@ int getFrameAddress(Scope currentScope)
 
 	static readonly bool[,] set = {
 		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,T, T,T,T,T, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, x,T,x,x, T,x,x,x, x,x,x,x, x,x,x,x, T,x,T,T, x,T,T,T, x,x,x,x, T,T,x,x, x,x,T,x, x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,x,x,x, x,x,x,x, x,x,x,x, T,x,T,T, x,T,T,T, x,x,x,x, x,x,x,x, x,x,T,x, x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,x,x,x, x,x,x,x, x,x,x,x, T,x,T,T, x,T,T,T, x,x,x,x, T,T,x,x, x,x,T,x, x},
-		{x,T,T,T, x,x,T,x, x,T,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,T,x,T, x,x,x,x, x}
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,T,T,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x},
+		{x,T,x,x, x,x,x,x, x,x,x,T, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, T,x,T,T, x,T,T,T, x,x,x,x, T,T,x,x, x,x,T,x, x},
+		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, T,x,T,T, x,T,T,T, x,x,x,x, x,x,x,x, x,x,T,x, x},
+		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, T,x,T,T, x,T,T,T, x,x,x,x, T,T,x,x, x,x,T,x, x},
+		{x,T,T,T, x,x,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x},
+		{x,x,x,x, x,x,x,x, x,x,x,T, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,T,x,T, x,x,x,x, x}
 
 	};
 } // end Parser
@@ -1355,24 +1347,24 @@ public class Errors {
 			case 4: s = "string expected"; break;
 			case 5: s = "\"+\" expected"; break;
 			case 6: s = "\"-\" expected"; break;
-			case 7: s = "\"[\" expected"; break;
-			case 8: s = "\"]\" expected"; break;
-			case 9: s = "\"true\" expected"; break;
-			case 10: s = "\"false\" expected"; break;
-			case 11: s = "\"*\" expected"; break;
-			case 12: s = "\"/\" expected"; break;
-			case 13: s = "\"void\" expected"; break;
-			case 14: s = "\"(\" expected"; break;
-			case 15: s = "\")\" expected"; break;
-			case 16: s = "\"{\" expected"; break;
-			case 17: s = "\"}\" expected"; break;
-			case 18: s = "\"=\" expected"; break;
-			case 19: s = "\"<\" expected"; break;
-			case 20: s = "\">\" expected"; break;
-			case 21: s = "\"<=\" expected"; break;
-			case 22: s = "\">=\" expected"; break;
-			case 23: s = "\"!=\" expected"; break;
-			case 24: s = "\";\" expected"; break;
+			case 7: s = "\"true\" expected"; break;
+			case 8: s = "\"false\" expected"; break;
+			case 9: s = "\"*\" expected"; break;
+			case 10: s = "\"/\" expected"; break;
+			case 11: s = "\"void\" expected"; break;
+			case 12: s = "\"(\" expected"; break;
+			case 13: s = "\")\" expected"; break;
+			case 14: s = "\"{\" expected"; break;
+			case 15: s = "\"}\" expected"; break;
+			case 16: s = "\"=\" expected"; break;
+			case 17: s = "\"<\" expected"; break;
+			case 18: s = "\">\" expected"; break;
+			case 19: s = "\"<=\" expected"; break;
+			case 20: s = "\">=\" expected"; break;
+			case 21: s = "\"!=\" expected"; break;
+			case 22: s = "\";\" expected"; break;
+			case 23: s = "\"[\" expected"; break;
+			case 24: s = "\"]\" expected"; break;
 			case 25: s = "\":=\" expected"; break;
 			case 26: s = "\"?\" expected"; break;
 			case 27: s = "\":\" expected"; break;
