@@ -302,6 +302,7 @@ void printSymbol(Symbol sym)
 }
 
 
+//calculates the next free address in the stack frame
 int getFrameAddress(Scope currentScope)
 {
 	int result = 0;
@@ -352,6 +353,8 @@ AddOp<out Instruction inst>
 
 /*------------------------------------------------------------------------*/
 
+//SymbolIdent is the production corresponding to possible variable names when
+//accessing a variable (as opposed to declaring one, which is just Ident)
 SymbolIdent<out string name>	(. string tempName; .)
 =
 	Ident<out name>		
@@ -495,6 +498,9 @@ LoadSymbol<Symbol sym, bool isExternal>
 
 /*------------------------------------------------------------------------*/
 
+//this production assumes that that the expression to be stored, as well as
+//the address are already on the stack (with the expression being on top of
+//the stack
 StoreIntoSymbol<Symbol sym, bool isExternal>
 =
 				(.
@@ -659,6 +665,12 @@ Stat                            (. Symbol sym; bool external = false; bool isExt
 
 /*------------------------------------------------------------------------*/
 
+//pushes the appropriate variable address onto the stack
+//the fetching of an addres is basically two steps. First is just finding
+//the symbol in question, which can be done via the Ident (seeing as the Ident
+//gives you the unique-ish name of the symbol in question.
+//Once you know what symbol you're looking for, this does the rest, whether
+//it's an array or a variable
 VariableAddress<Symbol sym, bool isExternal> (. TastierType type; int numberOfArrayIndexes = 0; .)
 
 =					(.	
@@ -716,6 +728,7 @@ VariableAddress<Symbol sym, bool isExternal> (. TastierType type; int numberOfAr
 
 /*------------------------------------------------------------------------*/
 
+//assigns things to a symbol in question i.e. a[1][2][3] := 'X'
 VariableAssignment<Symbol sym, bool isExternal>	(.  TastierType type; .)
 
 = 

@@ -1,5 +1,5 @@
 cs3071 Documentation							      studentNo: 13319368	
-												;
+												
 INTRODUCTION:
 
 So this report may wind up being a hefty one. We were given additional time to do this particlar
@@ -27,10 +27,10 @@ of Tastier are there to cross-reference for whenever I got lost, which I found v
 
 Changes will be covered in the order they appear in the Tastier.ATG file, so hopefully this 
 will make for easy following, if one is inclined to follow. This is all cleaning/polishing/
-redoing the previous labs to make them proper, and to uncut corners that were cur in order to 
+redoing the previous labs to make them proper, and to uncut corners that were cut in order to 
 just get the labs done. Day late and dollar short, but the Tastier file is now what it was 
 meant to be.
-												.
+											
 
 --->printSymbol function has been redone to accommodate arrays and structs. Also the whole thing 
 was rewritten in such a way as to make adding new kinds and types of symbols relatively painless.
@@ -40,7 +40,8 @@ was rewritten in such a way as to make adding new kinds and types of symbols rel
 scope. The previous solution of just counting the number of symbols on the stack was pretty
 silly, and made adding new kinds of symbols a total pain, so this function takes care of all
 your addressing needs. It accounts for variables, arrays and structs and their respective
-size needs.
+size needs. This also fixed the bug I could not for the life of me figure out when implementing
+strings, where strings required padding to work. The bug was in improper stack addressing.
 
 
 --->letter and string tokens were added to accommodate string literals and char arrays
@@ -50,7 +51,7 @@ size needs.
 in the mix.
 
 
---->SymbolLookup was added to refactor the symbol lookups all over the TastierFile.
+--->SymbolLookup was added to refactor the symbol lookups all over the Tastier.ATG file.
 
 
 --->Expr expression production was augmented with the conditional expression, so now instead
@@ -59,7 +60,7 @@ an expression could, which, I know, I know, should have been done from the start
 
 
 --->Factor was totally redone. References to arrays, variables and structs are covered with
-the first production, which is 4 lines of code. Yay. Added letter is a factor, which makes
+the first production, which is 4 lines of code. Yay. Added letter as a factor, which makes
 it play nice with write (but letters are not allowed in arithmetic for the sake of accidental
 mistakes)
 
@@ -153,8 +154,11 @@ where Expr is expression, so whatever Expr can produce fits in there, and Stat i
 Stat production can fit in. The breaks are mandatory, as is the default case.
 
 Under the hood it's just a chain of if/elses. After each Stat a jump to the end (post default Stat)
-is inserted, so that if the match succeeded and the case was executed, the PC jumps on out. I won't
-go into detail of how if/elses work, as it's been covered in previous documentation for these labs.
+is inserted, so that if the match succeeded and the case was executed, the PC jumps on out. If no
+match was found, the if/else chain just falls all the way through down into teh default case. 
+
+I won't go into detail of how if/elses work, as it's been covered in previous documentation 
+for these labs.
 
 
 
@@ -183,6 +187,111 @@ It's quite superficial, but could be used further, for example if one were imple
 and wanted to pass a struct as a parameter, a simple function could push on all relevant symbols
 onto the new stack frame, seeing as they're all identifiable. So I think the implementation is fine.
 
+These structs aren't quite what one would find in C, where a struct is more of a template. Here a
+struct is simply a way of grouping variables into conveient packages.
+
+
 
 
 3: ARRAY
+
+Unfortunately, I am using the stack to store the arrays, which is less than perfect. Ideally, arrays
+would be stored in dynamic memory, but the machinery to use dmem wasn't really in place, and I opted
+to go with the simpler option of the stack. This choice was made back when strings were being 
+implemented for the first time, and so I figured it was too late to switch. If I were to do it again,
+I'd use dmem. But it works, so oh well.
+
+Array declaration syntax is as follows:
+
+array type ident { [number] }
+
+Which means that the constructor for the array is static, which is a consequence of not using dmem.
+An array specified as: array char temp[10][20] has 10 rows, each with 20 columns each etc.
+
+The arrays are stored in row-major order. 
+
+In order to account for the size of the arrays, the Symbol class was augmented with an additional
+item (Item6), which is an array specifying the structure of the symbol. For variables, the array
+just contains plain old 1, as a variable can be viewed as an array of a single entry. Array
+dimensions are stored in reverse order (for ease of address computation) within the array. The
+getFrameAddress uses this information to appropriately calculate stack addresses, and 
+VariableAssignment uses this information to appropriately index into the array. The math
+for finding the appropriate address is simple. For a 3D array, it looks like this
+
+a[x][y][z] = x * size y * size z + y + size z + z
+
+where size z is the number of columns per row, and size y is the number of rows per, well, I think
+of it as a cuboid, so it's number of rows per slice of cuboid.
+
+However, indexing into arrays with just constants is very useless, so runtime accesses via
+expressions are allowed. This was implemented via 4 new instructions: LoadI, LoadIG, StoI, StoIG.
+There instructions are, obviously, variants of Load and Store already present in TastierMachine,
+with the exception that instead of taking arguments as instructions, they take their arguments
+from the stack at runtime. Thus the address/expression need not be known during compile time.
+
+The arrays can be of arbitrary dimension (within memory limits).
+
+It is enforced that arrays are always fully indexed, so now row-to-row assignments. This is only
+because I don't have the time to implement these fancy features, but I think it can be done.
+
+
+
+
+4: ADDITIONAL FEATURES - INCREMENT/DECREMENT AND RUN TIME ARRAY BOUNDS CHECKING
+
+RUN TIME ARRAY BOUNDS CHECKING
+
+Run-time checks are done within the VariableAddress production, as all accesses must use that
+production to extract an address. 
+
+It's a simple if/else. If the current index > number of entries in the dimension being accessed,
+an error is triggered. This error is a new instruction named ArrayOutOfBounds, and it prints to
+the console, that, well, there was an out of bounds array access. 
+
+The expression is already on the stack (i.e. the expression used to index into the array), so
+it is duplicated for compariso purposes (as boolean operators pop off their arguments). Then,
+atop the duplicated expression value the relevant dimension size is pushed on, which size
+can be found at sym.Item6[sym.Item6 - the number of the dimension being accessed]. The indexing
+of dimensions is not 0, but 1-based. So an example check looks like this:
+
+a[3][4][5] := 5, where the size of the array is a[10][10][20]
+
+Sym.Item6 contains [20, 10, 10]. Lets say [3] is being checked. So the 3 is duplicated and the
+duplicate is now atop the stack. Then sym.Item6[3 - 1] is pushed on, as 3 is the size of the
+dimension and 1 is the current dimension being accessed. Then a more than boolean operation
+is added, followed by an FJmp (jump on false). If 3 is more than 10, the FJmp won't take
+place and the execution will fall through to the error, otherwise everything is fine.
+Looks like this:
+
+if(index > bound)
+{
+	error
+}
+
+And that's done for every dimension. That's it, really. Seeing as it's so simple, I felt bad
+and added another feature.
+
+INCREMENT/DECREMENT
+
+Ident++ and Ident-- are now valid assignments, which is super nice within for and while 
+loops (and indeed, you can see increment being used in the Test.TAS file). Because the code
+is nicely refactored, adding these assignments was a breeze. I decided to make them assignments
+rather than operators, as realistically, their use is for for and while loops.
+
+The assignments are implemented in the VariableAssignment production. If the Ident is
+followed by ":=", it's a regular assignment. Otherwise, if it's "++" is increment, and if it's
+"--" it's decrement.
+
+Increment is implemented by pushing on a constant value of 1, the value of the Ident and an
+add instruction. Decrement is the same, except instead of the add, it's a sub. I would suggest
+looking at the VariableAssignment production, as all should be clear seeing as it's just
+30 lines of code (with most of that being indentation).
+
+I hope that run time array bounds + increment/decrememt + refactoring of the whole Tastier
+file is enough as far as additional features go. There are a bunch of things one could do,
+but alas there just isn't enough time.
+
+P.S. If this documentation is lackluster, please let me know precisely what it is missing! I
+tried to make it concise, but I don't think I quite have the hang of it, so all feedback
+will be appreciated. My e-mail is buinovsa@tcd.ie .
+
