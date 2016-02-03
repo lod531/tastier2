@@ -207,6 +207,7 @@ program Test {
 
 	void testStruct()
 	{
+		//expected output: 3 Y
 		struct test
 		{
 			int a;
@@ -222,6 +223,17 @@ program Test {
 		write test->testWithinTest->nestedArray[0];
 	}
 
+	void testWrite()
+	{
+		//expected output: HelloWorldabc
+		write "Hello", "World";
+		array char charArray[3];
+		charArray[0] := 'a';
+		charArray[1] := 'b';
+		charArray[2] := 'c';
+		write charArray[0], charArray[1], charArray[2];
+	}
+
   void Main() {
 	  testAssignment();
 	  testBooleanOps();
@@ -231,6 +243,7 @@ program Test {
 	  testConditionals();
 	  testSwitch();
 	  testStruct();
+	  testWrite();
   }
 }
 

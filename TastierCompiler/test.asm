@@ -1,4 +1,4 @@
-.names 13
+.names 14
 .proc Const
 .Var const0
 .Var const1
@@ -11,6 +11,7 @@
 .proc testConditionals
 .proc testSwitch
 .proc testStruct
+.proc testWrite
 .proc Main
 Const: Enter 3
 Const 99
@@ -595,6 +596,95 @@ LoadI 0
 CharWrite
 Leave
 Ret
+testWrite: Enter 3
+Const 72
+CharWrite
+Const 101
+CharWrite
+Const 108
+CharWrite
+Const 108
+CharWrite
+Const 111
+CharWrite
+Const 87
+CharWrite
+Const 111
+CharWrite
+Const 114
+CharWrite
+Const 108
+CharWrite
+Const 100
+CharWrite
+Const 0
+Const 0
+Dup
+Const 3
+Gtr
+FJmp L$58
+ArrayOutOfBounds
+L$58: Nop
+Add
+Const 97
+StoI 0
+Const 0
+Const 1
+Dup
+Const 3
+Gtr
+FJmp L$59
+ArrayOutOfBounds
+L$59: Nop
+Add
+Const 98
+StoI 0
+Const 0
+Const 2
+Dup
+Const 3
+Gtr
+FJmp L$60
+ArrayOutOfBounds
+L$60: Nop
+Add
+Const 99
+StoI 0
+Const 0
+Const 0
+Dup
+Const 3
+Gtr
+FJmp L$61
+ArrayOutOfBounds
+L$61: Nop
+Add
+LoadI 0
+CharWrite
+Const 0
+Const 1
+Dup
+Const 3
+Gtr
+FJmp L$62
+ArrayOutOfBounds
+L$62: Nop
+Add
+LoadI 0
+CharWrite
+Const 0
+Const 2
+Dup
+Const 3
+Gtr
+FJmp L$63
+ArrayOutOfBounds
+L$63: Nop
+Add
+LoadI 0
+CharWrite
+Leave
+Ret
 Main: Enter 0
 Call 1 testAssignment
 Call 1 testBooleanOps
@@ -604,5 +694,6 @@ Call 1 testArrays
 Call 1 testConditionals
 Call 1 testSwitch
 Call 1 testStruct
+Call 1 testWrite
 Leave
 Ret

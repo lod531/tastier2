@@ -253,10 +253,10 @@ public class Scanner {
 		start[91] = 22; 
 		start[93] = 23; 
 		start[102] = 37; 
+		start[44] = 28; 
 		start[115] = 38; 
 		start[98] = 39; 
 		start[100] = 40; 
-		start[44] = 31; 
 		start[Buffer.EOF] = -1;
 
 	}
@@ -378,11 +378,11 @@ public class Scanner {
 			case "do": t.kind = 35; break;
 			case "read": t.kind = 36; break;
 			case "write": t.kind = 37; break;
-			case "case": t.kind = 39; break;
-			case "program": t.kind = 42; break;
-			case "int": t.kind = 43; break;
-			case "bool": t.kind = 44; break;
-			case "char": t.kind = 45; break;
+			case "case": t.kind = 40; break;
+			case "program": t.kind = 43; break;
+			case "int": t.kind = 44; break;
+			case "bool": t.kind = 45; break;
+			case "char": t.kind = 46; break;
 			case "external": t.kind = 47; break;
 			case "procedure": t.kind = 48; break;
 			case "Const": t.kind = 49; break;
@@ -481,11 +481,11 @@ public class Scanner {
 			case 28:
 				{t.kind = 38; break;}
 			case 29:
-				{t.kind = 40; break;}
+				{t.kind = 39; break;}
 			case 30:
 				{t.kind = 41; break;}
 			case 31:
-				{t.kind = 46; break;}
+				{t.kind = 42; break;}
 			case 32:
 				recEnd = pos; recKind = 7;
 				if (ch == '>') {AddCh(); goto case 8;}
@@ -590,7 +590,7 @@ public class Scanner {
 			case 53:
 				recEnd = pos; recKind = 1;
 				if (ch >= '0' && ch <= '9' || ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z') {AddCh(); goto case 1;}
-				else if (ch == ';') {AddCh(); goto case 29;}
+				else if (ch == ';') {AddCh(); goto case 30;}
 				else {t.kind = 1; t.val = new String(tval, 0, tlen); CheckLiteral(); return t;}
 			case 54:
 				recEnd = pos; recKind = 1;
@@ -600,7 +600,7 @@ public class Scanner {
 			case 55:
 				recEnd = pos; recKind = 1;
 				if (ch >= '0' && ch <= '9' || ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z') {AddCh(); goto case 1;}
-				else if (ch == '(') {AddCh(); goto case 28;}
+				else if (ch == '(') {AddCh(); goto case 29;}
 				else {t.kind = 1; t.val = new String(tval, 0, tlen); CheckLiteral(); return t;}
 			case 56:
 				recEnd = pos; recKind = 1;
@@ -610,7 +610,7 @@ public class Scanner {
 			case 57:
 				recEnd = pos; recKind = 1;
 				if (ch >= '0' && ch <= '9' || ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z') {AddCh(); goto case 1;}
-				else if (ch == ':') {AddCh(); goto case 30;}
+				else if (ch == ':') {AddCh(); goto case 31;}
 				else {t.kind = 1; t.val = new String(tval, 0, tlen); CheckLiteral(); return t;}
 
 		}

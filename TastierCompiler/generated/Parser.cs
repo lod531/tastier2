@@ -331,6 +331,7 @@ void printSymbol(Symbol sym)
 }
 
 
+//calculates the next free address in the stack frame
 int getFrameAddress(Scope currentScope)
 {
 	int result = 0;
@@ -758,7 +759,7 @@ int getFrameAddress(Scope currentScope)
 		*/
 		
 		while (StartOf(3)) {
-			if (la.kind == 43 || la.kind == 44 || la.kind == 45) {
+			if (la.kind == 44 || la.kind == 45 || la.kind == 46) {
 				VarDecl(external, "");
 			} else if (StartOf(4)) {
 				Stat();
@@ -805,7 +806,7 @@ int getFrameAddress(Scope currentScope)
 		printSymbol(sym);
 		}
 		                          
-		while (la.kind == 46) {
+		while (la.kind == 38) {
 			Get();
 			Ident(out name);
 			name = symbolNamePrefix + name;
@@ -850,7 +851,7 @@ int getFrameAddress(Scope currentScope)
 			IfStat();
 			break;
 		}
-		case 38: {
+		case 39: {
 			SwitchStat();
 			break;
 		}
@@ -975,7 +976,7 @@ int getFrameAddress(Scope currentScope)
 
 	void SwitchStat() {
 		TastierType type; 
-		Expect(38);
+		Expect(39);
 		Expr(out type);
 		if (type != TastierType.Integer)
 		{
@@ -987,7 +988,7 @@ int getFrameAddress(Scope currentScope)
 		
 		Expect(9);
 		Expect(17);
-		while (la.kind == 39) {
+		while (la.kind == 40) {
 			Get();
 			program.Add(new Instruction("", "Dup"));
 			
@@ -1004,11 +1005,11 @@ int getFrameAddress(Scope currentScope)
 			Stat();
 			program.Add(new Instruction("", "Jmp " + endOfSwitchStatement));
 			
-			Expect(40);
+			Expect(41);
 			program.Add(new Instruction(openLabels.Pop(), "Nop"));
 			
 		}
-		Expect(41);
+		Expect(42);
 		Stat();
 		program.Add(new Instruction(endOfSwitchStatement, "Nop"));
 		program.Add(new Instruction("", "Pop"));
@@ -1144,6 +1145,34 @@ int getFrameAddress(Scope currentScope)
 			}	
 			
 		} else SynErr(61);
+		while (la.kind == 38) {
+			Get();
+			if (StartOf(7)) {
+				Expr(out type);
+				if (type != TastierType.Integer && type != TastierType.Character && type != TastierType.Boolean) {
+				SemErr("integer type expected");
+				}
+				if(type == TastierType.Integer)
+				{
+				program.Add(new Instruction("", "Write"));
+				}
+				else if(type == TastierType.Character)
+				{
+				program.Add(new Instruction("", "CharWrite"));
+				}
+				
+			} else if (la.kind == 4) {
+				Get();
+				charArray = t.val.ToCharArray();
+				//altered for bounds because first and last chars are not applicable (they're dashes)
+				for(int i = 1; i < charArray.Length-1; i++)
+				{
+				program.Add(new Instruction("", "Const " + Convert.ToInt32(charArray[i])));
+				program.Add(new Instruction("", "CharWrite"));
+				}	
+				
+			} else SynErr(62);
+		}
 		Expect(25);
 	}
 
@@ -1179,12 +1208,12 @@ int getFrameAddress(Scope currentScope)
 		printSymbol(sym);
 		}
 		
-		if (la.kind == 46) {
+		if (la.kind == 38) {
 			Get();
 			ArrayDecl(false, symbolNamePrefix);
 		} else if (la.kind == 25) {
 			Get();
-		} else SynErr(62);
+		} else SynErr(63);
 	}
 
 	void StructDecl(bool external, string symbolNamePrefix) {
@@ -1196,7 +1225,7 @@ int getFrameAddress(Scope currentScope)
 		while (StartOf(8)) {
 			if (la.kind == 50) {
 				ArrayDecl(external, symbolNamePrefix + name + "->");
-			} else if (la.kind == 43 || la.kind == 44 || la.kind == 45) {
+			} else if (la.kind == 44 || la.kind == 45 || la.kind == 46) {
 				VarDecl(external, symbolNamePrefix + name + "->");
 			} else {
 				StructDecl(external, symbolNamePrefix + name + "->");
@@ -1208,14 +1237,14 @@ int getFrameAddress(Scope currentScope)
 
 	void Tastier() {
 		string name; bool external = false; 
-		Expect(42);
+		Expect(43);
 		Ident(out name);
 		openScopes.Push(new Scope());
 		
 		Expect(17);
 		ConstProc();
 		while (StartOf(9)) {
-			if (la.kind == 43 || la.kind == 44 || la.kind == 45) {
+			if (la.kind == 44 || la.kind == 45 || la.kind == 46) {
 				VarDecl(external, "");
 			} else if (la.kind == 16) {
 				ProcDecl();
@@ -1280,7 +1309,7 @@ int getFrameAddress(Scope currentScope)
 		 put the right value in.
 		*/
 		
-		while (la.kind == 43 || la.kind == 44 || la.kind == 45) {
+		while (la.kind == 44 || la.kind == 45 || la.kind == 46) {
 			ConstDecl();
 		}
 		
@@ -1298,7 +1327,7 @@ int getFrameAddress(Scope currentScope)
 	void ExternDecl() {
 		string name; bool external = true; 
 		Expect(47);
-		if (la.kind == 43 || la.kind == 44 || la.kind == 45) {
+		if (la.kind == 44 || la.kind == 45 || la.kind == 46) {
 			VarDecl(external, "");
 		} else if (la.kind == 48) {
 			Get();
@@ -1308,21 +1337,21 @@ int getFrameAddress(Scope currentScope)
 			externalDeclarations.Add(sym); 
 			printSymbol(sym);
 			
-		} else SynErr(63);
+		} else SynErr(64);
 	}
 
 	void Type(out TastierType type) {
 		type = TastierType.Undefined; 
-		if (la.kind == 43) {
+		if (la.kind == 44) {
 			Get();
 			type = TastierType.Integer; 
-		} else if (la.kind == 44) {
-			Get();
-			type = TastierType.Boolean; 
 		} else if (la.kind == 45) {
 			Get();
+			type = TastierType.Boolean; 
+		} else if (la.kind == 46) {
+			Get();
 			type = TastierType.Character; 
-		} else SynErr(64);
+		} else SynErr(65);
 	}
 
 	void ConstDecl() {
@@ -1356,13 +1385,13 @@ int getFrameAddress(Scope currentScope)
 		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x},
 		{x,T,T,T, x,x,x,T, x,x,x,x, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x},
 		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,T,T,x, T,T,T,x, x,x,x,T, T,T,x,x, x,x,T,T, x,x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,T,T,x, T,T,T,x, x,x,x,x, x,x,x,x, x,x,T,T, x,x},
+		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,T,T,x, T,T,x,T, x,x,x,x, T,T,T,x, x,x,T,T, x,x},
+		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,T,T,x, T,T,x,T, x,x,x,x, x,x,x,x, x,x,T,T, x,x},
 		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, T,T,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x},
-		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,T,T,x, T,T,T,x, x,x,x,T, T,T,x,x, x,x,T,T, x,x},
+		{x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,T,T,x, T,T,x,T, x,x,x,x, T,T,T,x, x,x,T,T, x,x},
 		{x,T,T,T, x,x,x,T, T,x,x,x, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,x,x, x,x,T,T, x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,x,T, x,x,x,x, x,x}
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,T,T,x, x,x,T,T, x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,T,T,T, x,x,x,x, x,x}
 
 	};
 } // end Parser
@@ -1414,15 +1443,15 @@ public class Errors {
 			case 35: s = "\"do\" expected"; break;
 			case 36: s = "\"read\" expected"; break;
 			case 37: s = "\"write\" expected"; break;
-			case 38: s = "\"switch(\" expected"; break;
-			case 39: s = "\"case\" expected"; break;
-			case 40: s = "\"break;\" expected"; break;
-			case 41: s = "\"default:\" expected"; break;
-			case 42: s = "\"program\" expected"; break;
-			case 43: s = "\"int\" expected"; break;
-			case 44: s = "\"bool\" expected"; break;
-			case 45: s = "\"char\" expected"; break;
-			case 46: s = "\",\" expected"; break;
+			case 38: s = "\",\" expected"; break;
+			case 39: s = "\"switch(\" expected"; break;
+			case 40: s = "\"case\" expected"; break;
+			case 41: s = "\"break;\" expected"; break;
+			case 42: s = "\"default:\" expected"; break;
+			case 43: s = "\"program\" expected"; break;
+			case 44: s = "\"int\" expected"; break;
+			case 45: s = "\"bool\" expected"; break;
+			case 46: s = "\"char\" expected"; break;
 			case 47: s = "\"external\" expected"; break;
 			case 48: s = "\"procedure\" expected"; break;
 			case 49: s = "\"Const\" expected"; break;
@@ -1438,9 +1467,10 @@ public class Errors {
 			case 59: s = "invalid Stat"; break;
 			case 60: s = "invalid VariableAssignment"; break;
 			case 61: s = "invalid WriteStat"; break;
-			case 62: s = "invalid ArrayDecl"; break;
-			case 63: s = "invalid ExternDecl"; break;
-			case 64: s = "invalid Type"; break;
+			case 62: s = "invalid WriteStat"; break;
+			case 63: s = "invalid ArrayDecl"; break;
+			case 64: s = "invalid ExternDecl"; break;
+			case 65: s = "invalid Type"; break;
 
 			default: s = "error " + n; break;
 		}
